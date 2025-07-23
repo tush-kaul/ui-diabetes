@@ -198,7 +198,8 @@ export default function LabMonitoringEnhanced() {
 				{isChart ? (
 					<ResponsiveContainer
 						width="100%"
-						height={200}>
+						height={180}
+						className="sm:h-[200px]">
 						<LineChart data={data}>
 							<CartesianGrid strokeDasharray="3 3" />
 							<XAxis dataKey="date" />
@@ -415,16 +416,16 @@ export default function LabMonitoringEnhanced() {
 						</LineChart>
 					</ResponsiveContainer>
 				) : (
-					<div className="border rounded-lg overflow-hidden">
-						<table className="w-full text-sm">
+					<div className="border rounded-lg overflow-x-auto">
+						<table className="w-full text-xs sm:text-sm min-w-full">
 							<thead className="bg-gray-50">
 								<tr>
-									<th className="p-2 text-left">Date</th>
-									<th className="p-2 text-left">Value</th>
-									<th className="p-2 text-left">
+									<th className="p-2 sm:p-3 text-left">Date</th>
+									<th className="p-2 sm:p-3 text-left">Value</th>
+									<th className="p-2 sm:p-3 text-left hidden sm:table-cell">
 										Optimal Range
 									</th>
-									<th className="p-2 text-left">Status</th>
+									<th className="p-2 sm:p-3 text-left">Status</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -488,22 +489,23 @@ export default function LabMonitoringEnhanced() {
 										<tr
 											key={index}
 											className="border-t">
-											<td className="p-2">{item.date}</td>
-											<td className="p-2 font-semibold">
+											<td className="p-2 sm:p-3">{item.date}</td>
+											<td className="p-2 sm:p-3 font-semibold">
 												{value}
 												{thresholds?.unit || ""}
 											</td>
-											<td className="p-2 text-gray-600">
+											<td className="p-2 sm:p-3 text-gray-600 hidden sm:table-cell text-xs">
 												{optimalRange}
 											</td>
-											<td className="p-2">
+											<td className="p-2 sm:p-3">
 												<Badge
 													variant={
 														statusColor as
 															| "default"
 															| "destructive"
 															| "secondary"
-													}>
+													}
+													className="text-xs">
 													{status}
 												</Badge>
 											</td>
@@ -519,23 +521,23 @@ export default function LabMonitoringEnhanced() {
 	};
 
 	return (
-		<div className="p-8 bg-gradient-to-br from-gray-50 to-gray-100">
-			<h1 className="text-3xl font-bold text-navy-600 mb-6">
-				Lab Results/Monitoring Components
+		<div className="p-4 sm:p-8 bg-gradient-to-br from-gray-50 to-gray-100">
+			<h1 className="text-2xl sm:text-3xl font-bold text-navy-600 mb-4 sm:mb-6">
+				Lab Results/Monitoring
 			</h1>
 
 			<Tabs
 				defaultValue="longitudinal"
-				className="w-full">
-				<TabsList className="mb-4">
-					<TabsTrigger value="longitudinal">
-						Longitudinal Tracker
+				className="w-full space-y-2 sm:space-y-0">
+				<TabsList className="mb-4 w-full flex-wrap h-auto gap-1 p-1">
+					<TabsTrigger value="longitudinal" className="flex-1 text-xs sm:text-sm">
+						Tracker
 					</TabsTrigger>
-					<TabsTrigger value="lab-reports">Lab Reports</TabsTrigger>
-					<TabsTrigger value="other-labs">
-						Other Lab Results
+					<TabsTrigger value="lab-reports" className="flex-1 text-xs sm:text-sm">Lab Reports</TabsTrigger>
+					<TabsTrigger value="other-labs" className="flex-1 text-xs sm:text-sm">
+						Other Labs
 					</TabsTrigger>
-					<TabsTrigger value="reports">Reports & Images</TabsTrigger>
+					<TabsTrigger value="reports" className="flex-1 text-xs sm:text-sm">Reports</TabsTrigger>
 				</TabsList>
 
 				<TabsContent value="longitudinal">
@@ -548,7 +550,7 @@ export default function LabMonitoringEnhanced() {
 								</CardTitle>
 							</CardHeader>
 							<CardContent>
-								<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+								<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
 									<div>
 										{renderDataView(
 											monthlyMonitoring.FBS,
@@ -611,7 +613,7 @@ export default function LabMonitoringEnhanced() {
 								</CardTitle>
 							</CardHeader>
 							<CardContent>
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+								<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
 									<div>
 										{renderDataView(
 											yearlyMonitoring.Lipids,
@@ -834,7 +836,7 @@ export default function LabMonitoringEnhanced() {
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 								{otherLabResults.map((lab, index) => (
 									<div
 										key={index}
@@ -853,7 +855,8 @@ export default function LabMonitoringEnhanced() {
 																"deficient"
 														? "destructive"
 														: "secondary"
-												}>
+												}
+												className="text-xs">
 												{lab.status}
 											</Badge>
 										</div>
@@ -893,7 +896,7 @@ export default function LabMonitoringEnhanced() {
 									</p>
 									<Button>Upload Files</Button>
 								</div>
-								<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+								<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 									<div className="p-4 border rounded-lg">
 										<h4 className="font-semibold mb-2">
 											ECG Report

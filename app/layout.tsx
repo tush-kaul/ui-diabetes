@@ -26,7 +26,7 @@ html {
 }
         `}</style>
 			</head>
-			<body className="max-w-[95%] 2xl:max-w-[85%] mx-auto py-[5%]">
+			<body className="max-w-full md:max-w-[95%] 2xl:max-w-[85%] mx-auto py-[5%]">
 				{children}
 			</body>
 		</html>

@@ -127,7 +127,8 @@ export default function LifestyleEnhanced() {
 					<>
 						<ResponsiveContainer
 							width="100%"
-							height={300}>
+							height={250}
+							className="sm:h-[300px]">
 							<LineChart data={weightData}>
 								<CartesianGrid strokeDasharray="3 3" />
 								<XAxis dataKey="date" />
@@ -234,35 +235,35 @@ export default function LifestyleEnhanced() {
 								/>
 							</LineChart>
 						</ResponsiveContainer>
-						<div className="mt-4 flex justify-center space-x-6 text-sm">
+						<div className="mt-4 flex flex-wrap justify-center gap-3 sm:gap-6 text-xs sm:text-sm">
 							<div className="flex items-center space-x-2">
-								<div className="w-4 h-4 bg-green-200 rounded"></div>
+								<div className="w-3 h-3 sm:w-4 sm:h-4 bg-green-200 rounded"></div>
 								<span>Normal BMI (18.5-24.9)</span>
 							</div>
 							<div className="flex items-center space-x-2">
-								<div className="w-4 h-4 bg-yellow-200 rounded"></div>
+								<div className="w-3 h-3 sm:w-4 sm:h-4 bg-yellow-200 rounded"></div>
 								<span>Overweight (25-29.9)</span>
 							</div>
 							<div className="flex items-center space-x-2">
-								<div className="w-4 h-4 bg-red-200 rounded"></div>
+								<div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-200 rounded"></div>
 								<span>Obese (≥30)</span>
 							</div>
 						</div>
 					</>
 				) : (
-					<div className="border rounded-lg overflow-hidden">
-						<table className="w-full text-sm">
+					<div className="border rounded-lg overflow-x-auto">
+						<table className="w-full text-xs sm:text-sm min-w-full">
 							<thead className="bg-gray-50">
 								<tr>
-									<th className="p-3 text-left">Date</th>
-									<th className="p-3 text-left">
+									<th className="p-2 sm:p-3 text-left">Date</th>
+									<th className="p-2 sm:p-3 text-left">
 										Weight (kg)
 									</th>
-									<th className="p-3 text-left">BMI</th>
-									<th className="p-3 text-left">
+									<th className="p-2 sm:p-3 text-left">BMI</th>
+									<th className="p-2 sm:p-3 text-left">
 										BMI Category
 									</th>
-									<th className="p-3 text-left">Status</th>
+									<th className="p-2 sm:p-3 text-left">Status</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -270,7 +271,7 @@ export default function LifestyleEnhanced() {
 									<tr
 										key={index}
 										className="border-t">
-										<td className="p-3">{item.date}</td>
+										<td className="p-2 sm:p-3">{item.date}</td>
 										<td className="p-3 font-semibold">
 											{item.weight} kg
 										</td>
@@ -291,7 +292,7 @@ export default function LifestyleEnhanced() {
 											Normal: 18.5-24.9 | Overweight:
 											25-29.9 | Obese: ≥30
 										</td>
-										<td className="p-3">
+										<td className="p-2 sm:p-3">
 											<Badge
 												variant={
 													item.bmi < 25
@@ -342,7 +343,8 @@ export default function LifestyleEnhanced() {
 					<>
 						<ResponsiveContainer
 							width="100%"
-							height={300}>
+							height={250}
+							className="sm:h-[300px]">
 							<BarChart data={exerciseData}>
 								<CartesianGrid strokeDasharray="3 3" />
 								<XAxis dataKey="date" />
@@ -417,34 +419,34 @@ export default function LifestyleEnhanced() {
 								</Bar>
 							</BarChart>
 						</ResponsiveContainer>
-						<div className="mt-4 flex justify-center space-x-6 text-sm">
+						<div className="mt-4 flex flex-wrap justify-center gap-3 sm:gap-6 text-xs sm:text-sm">
 							<div className="flex items-center space-x-2">
-								<div className="w-4 h-4 bg-green-200 rounded"></div>
+								<div className="w-3 h-3 sm:w-4 sm:h-4 bg-green-200 rounded"></div>
 								<span>Excellent (≥150 min/week)</span>
 							</div>
 							<div className="flex items-center space-x-2">
-								<div className="w-4 h-4 bg-yellow-200 rounded"></div>
+								<div className="w-3 h-3 sm:w-4 sm:h-4 bg-yellow-200 rounded"></div>
 								<span>Moderate (100-149 min/week)</span>
 							</div>
 							<div className="flex items-center space-x-2">
-								<div className="w-4 h-4 bg-red-200 rounded"></div>
+								<div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-200 rounded"></div>
 								<span>Insufficient (&lt;100 min/week)</span>
 							</div>
 						</div>
 					</>
 				) : (
-					<div className="border rounded-lg overflow-hidden">
-						<table className="w-full text-sm">
+					<div className="border rounded-lg overflow-x-auto">
+						<table className="w-full text-xs sm:text-sm min-w-full">
 							<thead className="bg-gray-50">
 								<tr>
-									<th className="p-3 text-left">Date</th>
-									<th className="p-3 text-left">
+									<th className="p-2 sm:p-3 text-left">Date</th>
+									<th className="p-2 sm:p-3 text-left">
 										Exercise (min/week)
 									</th>
-									<th className="p-3 text-left">
+									<th className="p-2 sm:p-3 text-left">
 										Target Range
 									</th>
-									<th className="p-3 text-left">Status</th>
+									<th className="p-2 sm:p-3 text-left">Status</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -452,7 +454,7 @@ export default function LifestyleEnhanced() {
 									<tr
 										key={index}
 										className="border-t">
-										<td className="p-3">{item.date}</td>
+										<td className="p-2 sm:p-3">{item.date}</td>
 										<td className="p-3 font-semibold">
 											<span
 												style={{
@@ -471,7 +473,7 @@ export default function LifestyleEnhanced() {
 											Excellent: ≥150 | Moderate: 100-149
 											| Insufficient: &lt;100
 										</td>
-										<td className="p-3">
+										<td className="p-2 sm:p-3">
 											<Badge
 												variant={
 													item.minutes >= 150
@@ -522,7 +524,8 @@ export default function LifestyleEnhanced() {
 					<>
 						<ResponsiveContainer
 							width="100%"
-							height={300}>
+							height={250}
+							className="sm:h-[300px]">
 							<LineChart data={dietData}>
 								<CartesianGrid strokeDasharray="3 3" />
 								<XAxis dataKey="date" />
@@ -605,34 +608,34 @@ export default function LifestyleEnhanced() {
 								/>
 							</LineChart>
 						</ResponsiveContainer>
-						<div className="mt-4 flex justify-center space-x-6 text-sm">
+						<div className="mt-4 flex flex-wrap justify-center gap-3 sm:gap-6 text-xs sm:text-sm">
 							<div className="flex items-center space-x-2">
-								<div className="w-4 h-4 bg-green-200 rounded"></div>
+								<div className="w-3 h-3 sm:w-4 sm:h-4 bg-green-200 rounded"></div>
 								<span>Excellent (≥80)</span>
 							</div>
 							<div className="flex items-center space-x-2">
-								<div className="w-4 h-4 bg-yellow-200 rounded"></div>
+								<div className="w-3 h-3 sm:w-4 sm:h-4 bg-yellow-200 rounded"></div>
 								<span>Good (65-79)</span>
 							</div>
 							<div className="flex items-center space-x-2">
-								<div className="w-4 h-4 bg-red-200 rounded"></div>
+								<div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-200 rounded"></div>
 								<span>Needs Improvement (&lt;65)</span>
 							</div>
 						</div>
 					</>
 				) : (
-					<div className="border rounded-lg overflow-hidden">
-						<table className="w-full text-sm">
+					<div className="border rounded-lg overflow-x-auto">
+						<table className="w-full text-xs sm:text-sm min-w-full">
 							<thead className="bg-gray-50">
 								<tr>
-									<th className="p-3 text-left">Date</th>
-									<th className="p-3 text-left">
+									<th className="p-2 sm:p-3 text-left">Date</th>
+									<th className="p-2 sm:p-3 text-left">
 										Diet Score
 									</th>
-									<th className="p-3 text-left">
+									<th className="p-2 sm:p-3 text-left">
 										Quality Range
 									</th>
-									<th className="p-3 text-left">Status</th>
+									<th className="p-2 sm:p-3 text-left">Status</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -640,7 +643,7 @@ export default function LifestyleEnhanced() {
 									<tr
 										key={index}
 										className="border-t">
-										<td className="p-3">{item.date}</td>
+										<td className="p-2 sm:p-3">{item.date}</td>
 										<td className="p-3 font-semibold">
 											<span
 												style={{
@@ -658,7 +661,7 @@ export default function LifestyleEnhanced() {
 											Excellent: ≥80 | Good: 65-79 | Needs
 											Improvement: &lt;65
 										</td>
-										<td className="p-3">
+										<td className="p-2 sm:p-3">
 											<Badge
 												variant={
 													item.score >= 80
@@ -685,26 +688,26 @@ export default function LifestyleEnhanced() {
 	};
 
 	return (
-		<div className="p-8 bg-gradient-to-br from-gray-50 to-gray-100">
-			<h1 className="text-3xl font-bold text-navy-600 mb-6">
+		<div className="p-4 sm:p-8 bg-gradient-to-br from-gray-50 to-gray-100">
+			<h1 className="text-2xl sm:text-3xl font-bold text-navy-600 mb-4 sm:mb-6">
 				Lifestyle Factors
 			</h1>
 
 			<Tabs
 				defaultValue="overview"
-				className="w-full">
-				<TabsList className="mb-4">
-					<TabsTrigger value="overview">Overview</TabsTrigger>
-					<TabsTrigger value="weight">Weight Management</TabsTrigger>
-					<TabsTrigger value="exercise">
-						Exercise Tracking
+				className="w-full space-y-2 sm:space-y-0">
+				<TabsList className="mb-4 w-full flex-wrap h-auto gap-1 p-1">
+					<TabsTrigger value="overview" className="flex-1 text-xs sm:text-sm">Overview</TabsTrigger>
+					<TabsTrigger value="weight" className="flex-1 text-xs sm:text-sm">Weight</TabsTrigger>
+					<TabsTrigger value="exercise" className="flex-1 text-xs sm:text-sm">
+						Exercise
 					</TabsTrigger>
-					<TabsTrigger value="diet">Diet Quality</TabsTrigger>
-					<TabsTrigger value="habits">Habits & Sleep</TabsTrigger>
+					<TabsTrigger value="diet" className="flex-1 text-xs sm:text-sm">Diet</TabsTrigger>
+					<TabsTrigger value="habits" className="flex-1 text-xs sm:text-sm">Habits</TabsTrigger>
 				</TabsList>
 
 				<TabsContent value="overview">
-					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
 						<Card className="bg-white shadow-lg">
 							<CardHeader className="pb-3">
 								<CardTitle className="text-lg flex items-center">

@@ -8,19 +8,19 @@ export default function AdvicePrintableFixed() {
 	const currentDate = new Date().toLocaleDateString("en-GB");
 
 	return (
-		<div className="p-8 bg-white">
+		<div className="p-4 sm:p-8 bg-white">
 			<div className="max-w-4xl mx-auto">
 				{/* Header with Print/Download buttons */}
-				<div className="flex justify-between items-center mb-6 no-print">
-					<h1 className="text-3xl font-bold text-navy-600">
+				<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0 mb-4 sm:mb-6 no-print">
+					<h1 className="text-2xl sm:text-3xl font-bold text-navy-600">
 						Patient Advice Sheet
 					</h1>
-					<div className="flex space-x-2">
-						<Button onClick={() => window.print()}>
+					<div className="flex flex-col xs:flex-row space-y-2 xs:space-y-0 xs:space-x-2">
+						<Button onClick={() => window.print()} className="w-full xs:w-auto">
 							<Printer className="h-4 w-4 mr-2" />
 							Print
 						</Button>
-						<Button variant="outline">
+						<Button variant="outline" className="w-full xs:w-auto">
 							<Download className="h-4 w-4 mr-2" />
 							Download PDF
 						</Button>
@@ -32,7 +32,7 @@ export default function AdvicePrintableFixed() {
 					{/* Patient Information */}
 					<Card className="mb-4 page-break-inside-avoid">
 						<CardHeader className="text-center">
-							<CardTitle className="text-2xl">
+							<CardTitle className="text-xl sm:text-2xl">
 								PATIENT ADVICE SHEET
 							</CardTitle>
 							<p className="text-sm text-gray-600">
@@ -40,7 +40,7 @@ export default function AdvicePrintableFixed() {
 							</p>
 						</CardHeader>
 						<CardContent>
-							<div className="grid grid-cols-2 gap-4">
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 								<div>
 									<p>
 										<strong>Name:</strong> Mr X
@@ -71,7 +71,7 @@ export default function AdvicePrintableFixed() {
 					{/* Diagnosis */}
 					<Card className="mb-4 page-break-inside-avoid">
 						<CardHeader>
-							<CardTitle className="text-xl">Diagnosis</CardTitle>
+							<CardTitle className="text-lg sm:text-xl">Diagnosis</CardTitle>
 						</CardHeader>
 						<CardContent>
 							<ul className="space-y-1">
@@ -91,12 +91,12 @@ export default function AdvicePrintableFixed() {
 					{/* Key Health Metrics */}
 					<Card className="mb-4 page-break-inside-avoid">
 						<CardHeader>
-							<CardTitle className="text-xl">
+							<CardTitle className="text-lg sm:text-xl">
 								Current Health Status
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<div className="grid grid-cols-2 gap-4">
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 								<div>
 									<p>
 										<strong>Weight:</strong> 68 kg
@@ -137,12 +137,12 @@ export default function AdvicePrintableFixed() {
 					{/* Complication Assessment Status */}
 					<Card className="mb-4 page-break-inside-avoid">
 						<CardHeader>
-							<CardTitle className="text-xl">
+							<CardTitle className="text-lg sm:text-xl">
 								Complication Assessment Status
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<div className="grid grid-cols-2 gap-4">
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 								<div>
 									<p>
 										<strong>Eye Examination:</strong>{" "}
@@ -178,7 +178,7 @@ export default function AdvicePrintableFixed() {
 					<div className="page-break-before">
 						<Card className="mb-4 page-break-inside-avoid">
 							<CardHeader>
-								<CardTitle className="text-xl">
+								<CardTitle className="text-lg sm:text-xl">
 									Current Medications
 								</CardTitle>
 							</CardHeader>
@@ -258,7 +258,7 @@ export default function AdvicePrintableFixed() {
 					{/* Follow-up Instructions */}
 					<Card className="mb-4 page-break-inside-avoid">
 						<CardHeader>
-							<CardTitle className="text-xl">
+							<CardTitle className="text-lg sm:text-xl">
 								Follow-up Instructions
 							</CardTitle>
 						</CardHeader>
@@ -314,7 +314,7 @@ export default function AdvicePrintableFixed() {
 					<div className="page-break-before">
 						<Card className="mb-4 page-break-inside-avoid">
 							<CardHeader>
-								<CardTitle className="text-xl">
+								<CardTitle className="text-lg sm:text-xl">
 									Important Instructions
 								</CardTitle>
 							</CardHeader>
@@ -414,7 +414,7 @@ export default function AdvicePrintableFixed() {
 					{/* Vaccinations */}
 					<Card className="mb-4 page-break-inside-avoid">
 						<CardHeader>
-							<CardTitle className="text-xl">
+							<CardTitle className="text-lg sm:text-xl">
 								Vaccinations Due
 							</CardTitle>
 						</CardHeader>
@@ -434,13 +434,13 @@ export default function AdvicePrintableFixed() {
 								<p className="text-sm text-gray-600">
 									Patient/Attendant Signature
 								</p>
-								<div className="mt-8 border-b border-gray-400 w-48"></div>
+								<div className="mt-8 border-b border-gray-400 w-32 sm:w-48"></div>
 							</div>
 							<div className="text-right">
 								<p className="text-sm text-gray-600">
 									Doctor's Signature
 								</p>
-								<div className="mt-8 border-b border-gray-400 w-48"></div>
+								<div className="mt-8 border-b border-gray-400 w-32 sm:w-48"></div>
 								<p className="text-sm mt-2">
 									Dr. [Doctor Name]
 								</p>
