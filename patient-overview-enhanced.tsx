@@ -279,23 +279,34 @@ export default function PatientOverviewEnhanced() {
 	};
 
 	return (
-		<div className="p-8 bg-gradient-to-br from-gray-50 to-gray-100">
-			<div className="flex justify-between items-center mb-6">
-				<h1 className="text-3xl font-bold text-navy-600">
+		<div className="p-4 sm:p-8 bg-gradient-to-br from-gray-50 to-gray-100">
+			<div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 space-y-4 lg:space-y-0">
+				<h1 className="text-2xl sm:text-3xl font-bold text-navy-600">
 					Patient Overview
 				</h1>
-				<div className="flex space-x-2">
-					<Button variant="outline">
-						<FileText className="mr-2 h-4 w-4" /> Update
+				<div className="flex flex-wrap gap-2 w-full lg:w-auto">
+					<Button
+						variant="outline"
+						className="flex-1 sm:flex-none text-xs sm:text-sm">
+						<FileText className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+						<span className="hidden xs:inline">Update </span>
 						Prescription
 					</Button>
-					<Button variant="outline">
-						<PlusCircle className="mr-2 h-4 w-4" /> Order Tests
+					<Button
+						variant="outline"
+						className="flex-1 sm:flex-none text-xs sm:text-sm">
+						<PlusCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />{" "}
+						Order Tests
 					</Button>
 					<Dialog>
 						<DialogTrigger asChild>
-							<Button variant="outline">
-								<Calendar className="mr-2 h-4 w-4" /> Schedule
+							<Button
+								variant="outline"
+								className="flex-1 sm:flex-none text-xs sm:text-sm">
+								<Calendar className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+								<span className="hidden xs:inline">
+									Schedule{" "}
+								</span>
 								Follow-up
 							</Button>
 						</DialogTrigger>
@@ -338,8 +349,11 @@ export default function PatientOverviewEnhanced() {
 							</div>
 						</DialogContent>
 					</Dialog>
-					<Button variant="outline">
-						<Stethoscope className="mr-2 h-4 w-4" /> Refer to
+					<Button
+						variant="outline"
+						className="flex-1 sm:flex-none text-xs sm:text-sm">
+						<Stethoscope className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+						<span className="hidden xs:inline">Refer to </span>
 						Specialist
 					</Button>
 				</div>
@@ -410,9 +424,9 @@ export default function PatientOverviewEnhanced() {
 				</CardHeader>
 				<CardContent>
 					<div className="space-y-4">
-						<div className="flex items-center space-x-4">
+						<div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
 							<Select>
-								<SelectTrigger className="w-64">
+								<SelectTrigger className="w-full sm:w-64">
 									<SelectValue placeholder="Select from WhatsApp complaints" />
 								</SelectTrigger>
 								<SelectContent>
@@ -442,7 +456,7 @@ export default function PatientOverviewEnhanced() {
 								onChange={(e) =>
 									setNewComplaint(e.target.value)
 								}
-								className="w-64"
+								className="w-full sm:w-64"
 							/>
 							<Button>Add New</Button>
 						</div>
@@ -459,7 +473,7 @@ export default function PatientOverviewEnhanced() {
 				</CardContent>
 			</Card>
 
-			<div className="grid grid-cols-3 gap-6 mb-6">
+			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
 				{/* Enhanced Diagnosis Section */}
 				<Card className="bg-white shadow-md">
 					<CardHeader>
@@ -579,7 +593,7 @@ export default function PatientOverviewEnhanced() {
 										Edit Health Metrics
 									</DialogTitle>
 								</DialogHeader>
-								<div className="grid grid-cols-2 gap-4">
+								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 									<div>
 										<Label>Weight (kg)</Label>
 										<Input defaultValue="68" />
@@ -653,7 +667,7 @@ export default function PatientOverviewEnhanced() {
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<div className="grid grid-cols-2 gap-4">
+					<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 						<div>
 							<h4 className="font-semibold mb-2 text-green-600">
 								Diabetes Management:
@@ -848,7 +862,7 @@ export default function PatientOverviewEnhanced() {
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<div className="grid grid-cols-3 gap-4">
+					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 						{organAssessment.map((organ, index) => {
 							const IconComponent = organ.icon;
 							return (
