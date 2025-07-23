@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,11 @@ import {
 	CheckCircle,
 	BarChart3,
 	Table,
+	Plus,
+	Play,
+	Pause,
+	Save,
+	Activity,
 } from "lucide-react";
 import {
 	LineChart,
@@ -54,12 +59,19 @@ export default function MedicationsEnhanced() {
 		indication: "",
 	});
 
+	const [editingMedication, setEditingMedication] =
+		useState<Medication | null>(null);
+	const [medications, setMedications] = useState([]);
+	const [showAddForm, setShowAddForm] = useState(false);
+	const [managementMedications, setManagementMedications] = useState<any>([]);
+
 	const toggleViewMode = (metric: keyof typeof viewMode) => {
 		setViewMode((prev) => ({
 			...prev,
 			[metric]: prev[metric] === "chart" ? "table" : "chart",
 		}));
 	};
+
 	// Medication adherence data with threshold zones
 	const adherenceData = [
 		{ date: "2024-01", adherence: 85, target: 90 },
@@ -80,6 +92,118 @@ export default function MedicationsEnhanced() {
 		{ date: "2024-05", hba1c: 8.1, bpSystolic: 130, bpDiastolic: 84 },
 		{ date: "2024-06", hba1c: 8.2, bpSystolic: 132, bpDiastolic: 86 },
 		{ date: "2024-07", hba1c: 8.2, bpSystolic: 130, bpDiastolic: 84 },
+	];
+
+	// Medication timeline data for Gantt chart
+	const medicationTimeline = [
+		{
+			id: 1,
+			name: "Novomix Penfill",
+			type: "Insulin",
+			periods: [
+				{
+					startDate: "2020-01-15",
+					endDate: "2021-06-30",
+					status: "active",
+					reason: "Initial therapy",
+				},
+				{
+					startDate: "2021-07-01",
+					endDate: "2021-12-31",
+					status: "stopped",
+					reason: "Side effects",
+				},
+				{
+					startDate: "2022-01-01",
+					endDate: null,
+					status: "active",
+					reason: "Resumed with dose adjustment",
+				},
+			],
+			currentDosage: "20-22 units morning, 16-18 units evening",
+		},
+		{
+			id: 2,
+			name: "Metformin + Glimepiride",
+			type: "Oral Antidiabetic",
+			periods: [
+				{
+					startDate: "2018-03-10",
+					endDate: null,
+					status: "active",
+					reason: "Continuous therapy",
+				},
+			],
+			currentDosage: "500mg/2mg twice daily",
+		},
+		{
+			id: 3,
+			name: "Sitagliptin + Dapagliflozin",
+			type: "Oral Antidiabetic",
+			periods: [
+				{
+					startDate: "2024-01-10",
+					endDate: null,
+					status: "active",
+					reason: "Added for better control",
+				},
+			],
+			currentDosage: "100mg/10mg once daily",
+		},
+		{
+			id: 4,
+			name: "Losartan + Amlodipine",
+			type: "Antihypertensive",
+			periods: [
+				{
+					startDate: "2019-06-20",
+					endDate: "2020-03-15",
+					status: "active",
+					reason: "Initial therapy",
+				},
+				{
+					startDate: "2020-03-16",
+					endDate: "2020-08-30",
+					status: "stopped",
+					reason: "Dose optimization",
+				},
+				{
+					startDate: "2020-09-01",
+					endDate: null,
+					status: "active",
+					reason: "Resumed with lower dose",
+				},
+			],
+			currentDosage: "50mg/5mg once daily",
+		},
+		{
+			id: 5,
+			name: "Aspirin + Atorvastatin",
+			type: "Cardioprotective",
+			periods: [
+				{
+					startDate: "2019-06-20",
+					endDate: null,
+					status: "active",
+					reason: "Cardioprotection",
+				},
+			],
+			currentDosage: "75mg/10mg once daily",
+		},
+		{
+			id: 6,
+			name: "Apremilast",
+			type: "Immunomodulator",
+			periods: [
+				{
+					startDate: "2023-01-15",
+					endDate: "2024-01-15",
+					status: "discontinued",
+					reason: "Ineffective",
+				},
+			],
+			currentDosage: "10mg once daily (discontinued)",
+		},
 	];
 
 	const currentMedications = [
@@ -181,6 +305,20 @@ export default function MedicationsEnhanced() {
 		},
 	];
 
+	// Initialize management medications after currentMedications is defined
+	useEffect(() => {
+		if (managementMedications.length === 0) {
+			setManagementMedications(
+				currentMedications.map((med) => ({
+					...med,
+					remarks: "",
+					prescribedBy: "Dr. Smith",
+					lastModified: "2024-07-15",
+				}))
+			);
+		}
+	}, []);
+
 	const renderAdherenceChart = () => {
 		const isChart = viewMode.adherence === "chart";
 
@@ -276,6 +414,7 @@ export default function MedicationsEnhanced() {
 												: "#ef4444";
 										return (
 											<circle
+												key={payload.date}
 												cx={cx}
 												cy={cy}
 												r={4}
@@ -308,14 +447,18 @@ export default function MedicationsEnhanced() {
 						<table className="w-full text-xs sm:text-sm min-w-full">
 							<thead className="bg-gray-50">
 								<tr>
-									<th className="p-2 sm:p-3 text-left">Date</th>
+									<th className="p-2 sm:p-3 text-left">
+										Date
+									</th>
 									<th className="p-2 sm:p-3 text-left">
 										Adherence (%)
 									</th>
 									<th className="p-2 sm:p-3 text-left hidden sm:table-cell">
 										Target Range
 									</th>
-									<th className="p-2 sm:p-3 text-left">Status</th>
+									<th className="p-2 sm:p-3 text-left">
+										Status
+									</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -323,7 +466,9 @@ export default function MedicationsEnhanced() {
 									<tr
 										key={index}
 										className="border-t">
-										<td className="p-2 sm:p-3">{item.date}</td>
+										<td className="p-2 sm:p-3">
+											{item.date}
+										</td>
 										<td className="p-2 sm:p-3 font-semibold">
 											<span
 												style={{
@@ -495,8 +640,12 @@ export default function MedicationsEnhanced() {
 						<table className="w-full text-xs sm:text-sm min-w-full">
 							<thead className="bg-gray-50">
 								<tr>
-									<th className="p-2 sm:p-3 text-left">Date</th>
-									<th className="p-2 sm:p-3 text-left">HbA1c (%)</th>
+									<th className="p-2 sm:p-3 text-left">
+										Date
+									</th>
+									<th className="p-2 sm:p-3 text-left">
+										HbA1c (%)
+									</th>
 									<th className="p-2 sm:p-3 text-left hidden sm:table-cell">
 										Target Zone
 									</th>
@@ -510,7 +659,9 @@ export default function MedicationsEnhanced() {
 									<tr
 										key={index}
 										className="border-t">
-										<td className="p-2 sm:p-3">{item.date}</td>
+										<td className="p-2 sm:p-3">
+											{item.date}
+										</td>
 										<td className="p-2 sm:p-3 font-semibold">
 											<span
 												style={{
@@ -555,6 +706,654 @@ export default function MedicationsEnhanced() {
 		);
 	};
 
+	// Helper function to calculate position for Gantt chart
+	interface GanttPosition {
+		left: string;
+		width: string;
+	}
+
+	interface MedicationPeriod {
+		startDate: string;
+		endDate: string | null;
+		status: "active" | "stopped" | "discontinued";
+		reason: string;
+	}
+
+	const calculateGanttPosition = (
+		startDate: string,
+		endDate: string | null = null
+	): GanttPosition => {
+		const start = new Date(startDate);
+		const end = endDate ? new Date(endDate) : new Date();
+		const chartStart = new Date("2018-01-01");
+		const chartEnd = new Date("2024-12-31");
+
+		const totalDuration = chartEnd.getTime() - chartStart.getTime();
+		const startOffset =
+			((start.getTime() - chartStart.getTime()) / totalDuration) * 100;
+		const width = ((end.getTime() - start.getTime()) / totalDuration) * 100;
+
+		return {
+			left: `${Math.max(0, startOffset)}%`,
+			width: `${Math.max(1, width)}%`,
+		};
+	};
+
+	const renderGanttChart = () => {
+		return (
+			<div className="space-y-4">
+				{/* Timeline header */}
+				<div className="relative bg-gray-50 p-4 rounded-lg overflow-x-auto">
+					<div className="flex justify-between text-xs text-gray-600 mb-2">
+						<span>2018</span>
+						<span>2019</span>
+						<span>2020</span>
+						<span>2021</span>
+						<span>2022</span>
+						<span>2023</span>
+						<span>2024</span>
+					</div>
+					<div className="h-2 bg-gray-200 rounded relative">
+						{/* Year markers */}
+						{[2018, 2019, 2020, 2021, 2022, 2023, 2024].map(
+							(year, index) => (
+								<div
+									key={year}
+									className="absolute top-0 bottom-0 w-px bg-gray-400"
+									style={{ left: `${(index / 6) * 100}%` }}
+								/>
+							)
+						)}
+					</div>
+				</div>
+
+				{/* Medication timeline rows */}
+				<div className="space-y-3">
+					{medicationTimeline.map((medication) => (
+						<div
+							key={medication.id}
+							className="border rounded-lg p-4 bg-white">
+							<div className="flex flex-col sm:flex-row sm:items-start justify-between mb-3">
+								<div className="mb-2 sm:mb-0">
+									<h4 className="font-semibold text-sm sm:text-base">
+										{medication.name}
+									</h4>
+									<p className="text-xs text-gray-600">
+										{medication.type}
+									</p>
+									<p className="text-xs text-gray-600">
+										{medication.currentDosage}
+									</p>
+								</div>
+								<Badge
+									variant={
+										medication.periods.some(
+											(p) => p.status === "active"
+										)
+											? "default"
+											: "secondary"
+									}>
+									{medication.periods.some(
+										(p) => p.status === "active"
+									)
+										? "Active"
+										: "Discontinued"}
+								</Badge>
+							</div>
+
+							{/* Timeline bars */}
+							<div className="relative h-8 bg-gray-100 rounded overflow-hidden">
+								{medication.periods.map((period, index) => {
+									const position = calculateGanttPosition(
+										period.startDate,
+										period.endDate
+									);
+									const colorClass =
+										period.status === "active"
+											? "bg-green-500"
+											: period.status === "stopped"
+											? "bg-red-500"
+											: "bg-gray-400";
+
+									return (
+										<div
+											key={index}
+											className={`absolute top-1 bottom-1 ${colorClass} rounded-sm opacity-80 hover:opacity-100 transition-opacity`}
+											style={position}
+											title={`${period.status}: ${
+												period.startDate
+											} ${
+												period.endDate
+													? "- " + period.endDate
+													: "- ongoing"
+											}\nReason: ${period.reason}`}
+										/>
+									);
+								})}
+							</div>
+
+							{/* Period details */}
+							<div className="mt-2 space-y-1">
+								{medication.periods.map((period, index) => (
+									<div
+										key={index}
+										className="flex flex-wrap items-center text-xs text-gray-600 gap-2">
+										<div
+											className={`w-3 h-3 rounded-sm ${
+												period.status === "active"
+													? "bg-green-500"
+													: period.status ===
+													  "stopped"
+													? "bg-red-500"
+													: "bg-gray-400"
+											}`}
+										/>
+										<span className="font-medium capitalize">
+											{period.status}:
+										</span>
+										<span>{period.startDate}</span>
+										{period.endDate && (
+											<>
+												<span>-</span>
+												<span>{period.endDate}</span>
+											</>
+										)}
+										{!period.endDate && (
+											<span>- ongoing</span>
+										)}
+										<span className="text-gray-500">
+											({period.reason})
+										</span>
+									</div>
+								))}
+							</div>
+						</div>
+					))}
+				</div>
+
+				{/* Legend */}
+				<div className="flex flex-wrap gap-4 text-xs text-gray-600 bg-gray-50 p-3 rounded-lg">
+					<div className="flex items-center gap-2">
+						<div className="w-3 h-3 bg-green-500 rounded-sm" />
+						<span>Active</span>
+					</div>
+					<div className="flex items-center gap-2">
+						<div className="w-3 h-3 bg-red-500 rounded-sm" />
+						<span>Stopped</span>
+					</div>
+					<div className="flex items-center gap-2">
+						<div className="w-3 h-3 bg-gray-400 rounded-sm" />
+						<span>Discontinued</span>
+					</div>
+				</div>
+			</div>
+		);
+	};
+
+	interface Medication {
+		id: number;
+		status: "Active" | "Stopped";
+		// Other properties of medication
+	}
+
+	const handleStatusChange = (
+		id: number,
+		newStatus: "Active" | "Stopped"
+	) => {
+		setManagementMedications((prev: Medication[]) =>
+			prev.map((med: Medication) =>
+				med.id === id
+					? {
+							...med,
+							status: newStatus,
+							lastModified: new Date()
+								.toISOString()
+								.split("T")[0],
+					  }
+					: med
+			)
+		);
+	};
+
+	interface Medication {
+		id: number;
+		status: "Active" | "Stopped";
+		dosage: string;
+		frequency: string;
+		remarks?: string;
+		// Other properties of medication
+	}
+
+	const handleEditMedication = (medication: Medication) => {
+		setEditingMedication(medication);
+	};
+
+	interface UpdatedMedicationData {
+		dosage?: string;
+		frequency?: string;
+		remarks?: string;
+	}
+
+	const handleSaveMedication = (
+		id: number,
+		updatedData: UpdatedMedicationData
+	) => {
+		setManagementMedications((prev: ManagementMedication[]) =>
+			prev.map((med: ManagementMedication) =>
+				med.id === id
+					? {
+							...med,
+							...updatedData,
+							lastModified: new Date()
+								.toISOString()
+								.split("T")[0],
+					  }
+					: med
+			)
+		);
+		setEditingMedication(null);
+	};
+
+	interface NewMedication {
+		name: string;
+		dosage: string;
+		frequency: string;
+		duration: string;
+		indication: string;
+	}
+
+	interface ManagementMedication extends Omit<Medication, "status"> {
+		remarks: string;
+		prescribedBy: string;
+		lastModified: string;
+		status: "Active" | "Stopped";
+	}
+
+	const handleAddMedication = (newMed: NewMedication) => {
+		const newId =
+			Math.max(
+				...managementMedications.map((m: ManagementMedication) => m.id)
+			) + 1;
+		setManagementMedications((prev: ManagementMedication[]) => [
+			...prev,
+			{
+				...newMed,
+				id: newId,
+				status: "Active",
+				adherence: 100,
+				effectiveness: "Good",
+				sideEffects: "None reported",
+				cost: "₹0/month",
+				nextReview: "2024-12-31",
+				prescribedBy: "Dr. Smith",
+				lastModified: new Date().toISOString().split("T")[0],
+				remarks: "",
+			},
+		]);
+		setShowAddForm(false);
+		setNewMedication({
+			name: "",
+			dosage: "",
+			frequency: "",
+			duration: "",
+			indication: "",
+		});
+	};
+
+	const renderManagementTable = () => {
+		return (
+			<div className="space-y-4">
+				{/* Add new medication form */}
+				{showAddForm && (
+					<Card className="border-blue-200 bg-blue-50">
+						<CardHeader>
+							<CardTitle className="text-lg text-blue-800">
+								Add New Medication
+							</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+								<div>
+									<Label htmlFor="new-med-name">
+										Medication Name
+									</Label>
+									<Input
+										id="new-med-name"
+										value={newMedication.name}
+										onChange={(e) =>
+											setNewMedication({
+												...newMedication,
+												name: e.target.value,
+											})
+										}
+										placeholder="Enter medication name"
+									/>
+								</div>
+								<div>
+									<Label htmlFor="new-med-dosage">
+										Dosage
+									</Label>
+									<Input
+										id="new-med-dosage"
+										value={newMedication.dosage}
+										onChange={(e) =>
+											setNewMedication({
+												...newMedication,
+												dosage: e.target.value,
+											})
+										}
+										placeholder="e.g., 500mg"
+									/>
+								</div>
+								<div>
+									<Label htmlFor="new-med-frequency">
+										Frequency
+									</Label>
+									<Select
+										value={newMedication.frequency}
+										onValueChange={(value) =>
+											setNewMedication({
+												...newMedication,
+												frequency: value,
+											})
+										}>
+										<SelectTrigger>
+											<SelectValue placeholder="Select frequency" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="once-daily">
+												Once daily
+											</SelectItem>
+											<SelectItem value="twice-daily">
+												Twice daily
+											</SelectItem>
+											<SelectItem value="three-times-daily">
+												Three times daily
+											</SelectItem>
+											<SelectItem value="as-needed">
+												As needed
+											</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+								<div>
+									<Label htmlFor="new-med-indication">
+										Indication
+									</Label>
+									<Input
+										id="new-med-indication"
+										value={newMedication.indication}
+										onChange={(e) =>
+											setNewMedication({
+												...newMedication,
+												indication: e.target.value,
+											})
+										}
+										placeholder="Indication for medication"
+									/>
+								</div>
+							</div>
+							<div className="flex justify-end space-x-2 mt-4">
+								<Button
+									variant="outline"
+									onClick={() => setShowAddForm(false)}>
+									Cancel
+								</Button>
+								<Button
+									onClick={() =>
+										handleAddMedication(newMedication)
+									}>
+									<Save className="mr-2 h-4 w-4" />
+									Add Medication
+								</Button>
+							</div>
+						</CardContent>
+					</Card>
+				)}
+
+				{/* Management table */}
+				<div className="border rounded-lg overflow-x-auto">
+					<table className="w-full text-xs sm:text-sm min-w-[800px]">
+						<thead className="bg-gray-50">
+							<tr>
+								<th className="p-2 sm:p-3 text-left font-semibold">
+									Medication
+								</th>
+								<th className="p-2 sm:p-3 text-left font-semibold">
+									Dosage
+								</th>
+								<th className="p-2 sm:p-3 text-left font-semibold">
+									Frequency
+								</th>
+								<th className="p-2 sm:p-3 text-left font-semibold">
+									Status
+								</th>
+								<th className="p-2 sm:p-3 text-left font-semibold">
+									Remarks
+								</th>
+								<th className="p-2 sm:p-3 text-left font-semibold">
+									Actions
+								</th>
+							</tr>
+						</thead>
+						<tbody>
+							{managementMedications.map(
+								(medication: ManagementMedication) => (
+									<tr
+										key={medication.id}
+										className="border-t hover:bg-gray-50">
+										<td className="p-2 sm:p-3">
+											<div>
+												<div className="font-medium">
+													{medication.name}
+												</div>
+												<div className="text-xs text-gray-600">
+													{medication.type}
+												</div>
+											</div>
+										</td>
+										<td className="p-2 sm:p-3">
+											{editingMedication?.id ===
+											medication.id ? (
+												<Input
+													defaultValue={
+														medication.dosage
+													}
+													className="w-full text-xs"
+													onBlur={(e) =>
+														handleSaveMedication(
+															medication.id,
+															{
+																dosage: e.target
+																	.value,
+															}
+														)
+													}
+												/>
+											) : (
+												<span className="text-xs">
+													{medication.dosage}
+												</span>
+											)}
+										</td>
+										<td className="p-2 sm:p-3">
+											{editingMedication?.id ===
+											medication.id ? (
+												<Select
+													defaultValue={
+														medication.frequency
+													}
+													onValueChange={(value) =>
+														handleSaveMedication(
+															medication.id,
+															{ frequency: value }
+														)
+													}>
+													<SelectTrigger className="w-full text-xs">
+														<SelectValue />
+													</SelectTrigger>
+													<SelectContent>
+														<SelectItem value="once-daily">
+															Once daily
+														</SelectItem>
+														<SelectItem value="twice-daily">
+															Twice daily
+														</SelectItem>
+														<SelectItem value="three-times-daily">
+															Three times daily
+														</SelectItem>
+														<SelectItem value="as-needed">
+															As needed
+														</SelectItem>
+													</SelectContent>
+												</Select>
+											) : (
+												<span className="text-xs">
+													{medication.frequency}
+												</span>
+											)}
+										</td>
+										<td className="p-2 sm:p-3">
+											<div className="flex items-center space-x-2">
+												<Badge
+													variant={
+														medication.status ===
+														"Active"
+															? "default"
+															: "secondary"
+													}
+													className="text-xs">
+													{medication.status}
+												</Badge>
+												<div className="flex space-x-1">
+													{medication.status ===
+													"Active" ? (
+														<Button
+															size="sm"
+															variant="outline"
+															onClick={() =>
+																handleStatusChange(
+																	medication.id,
+																	"Stopped"
+																)
+															}
+															className="p-1 h-6 w-6"
+															title="Stop medication">
+															<Pause className="h-3 w-3" />
+														</Button>
+													) : (
+														<Button
+															size="sm"
+															variant="outline"
+															onClick={() =>
+																handleStatusChange(
+																	medication.id,
+																	"Active"
+																)
+															}
+															className="p-1 h-6 w-6"
+															title="Start medication">
+															<Play className="h-3 w-3" />
+														</Button>
+													)}
+												</div>
+											</div>
+										</td>
+										<td className="p-2 sm:p-3">
+											{editingMedication?.id ===
+											medication.id ? (
+												<Textarea
+													defaultValue={
+														medication.remarks || ""
+													}
+													className="w-full text-xs h-16"
+													onBlur={(e) =>
+														handleSaveMedication(
+															medication.id,
+															{
+																remarks:
+																	e.target
+																		.value,
+															}
+														)
+													}
+													placeholder="Add remarks..."
+												/>
+											) : (
+												<span className="text-xs text-gray-600">
+													{medication.remarks ||
+														"No remarks"}
+												</span>
+											)}
+										</td>
+										<td className="p-2 sm:p-3">
+											<div className="flex space-x-1">
+												<Button
+													size="sm"
+													variant="outline"
+													onClick={() =>
+														handleEditMedication(
+															medication
+														)
+													}
+													className="p-1 h-6 w-6"
+													title="Edit medication">
+													<Edit className="h-3 w-3" />
+												</Button>
+												<Button
+													size="sm"
+													variant="outline"
+													onClick={() => {
+														if (
+															confirm(
+																"Are you sure you want to delete this medication?"
+															)
+														) {
+															setManagementMedications(
+																(prev) =>
+																	prev.filter(
+																		(m) =>
+																			m.id !==
+																			medication.id
+																	)
+															);
+														}
+													}}
+													className="p-1 h-6 w-6 text-red-600 hover:text-red-700"
+													title="Delete medication">
+													<Trash2 className="h-3 w-3" />
+												</Button>
+											</div>
+										</td>
+									</tr>
+								)
+							)}
+						</tbody>
+					</table>
+				</div>
+
+				{/* Table summary */}
+				<div className="bg-gray-50 p-3 rounded-lg text-xs text-gray-600">
+					<p>
+						Total medications: {managementMedications.length} |
+						Active:{" "}
+						{
+							managementMedications.filter(
+								(m) => m.status === "Active"
+							).length
+						}{" "}
+						| Stopped:{" "}
+						{
+							managementMedications.filter(
+								(m) => m.status === "Stopped"
+							).length
+						}
+					</p>
+				</div>
+			</div>
+		);
+	};
+
 	return (
 		<div className="p-4 sm:p-8 bg-gradient-to-br from-gray-50 to-gray-100">
 			<h1 className="text-2xl sm:text-3xl font-bold text-navy-600 mb-4 sm:mb-6">
@@ -565,17 +1364,30 @@ export default function MedicationsEnhanced() {
 				defaultValue="current"
 				className="w-full space-y-2 sm:space-y-0">
 				<TabsList className="mb-4 w-full flex-wrap h-auto gap-1 p-1">
-					<TabsTrigger value="current" className="flex-1 text-xs sm:text-sm">
+					<TabsTrigger
+						value="current"
+						className="flex-1 text-xs sm:text-sm">
 						Current
 					</TabsTrigger>
-					<TabsTrigger value="adherence" className="flex-1 text-xs sm:text-sm">
+					<TabsTrigger
+						value="timeline"
+						className="flex-1 text-xs sm:text-sm">
+						Timeline
+					</TabsTrigger>
+					<TabsTrigger
+						value="table-management"
+						className="flex-1 text-xs sm:text-sm">
+						Management
+					</TabsTrigger>
+					<TabsTrigger
+						value="adherence"
+						className="flex-1 text-xs sm:text-sm">
 						Adherence
 					</TabsTrigger>
-					<TabsTrigger value="effectiveness" className="flex-1 text-xs sm:text-sm">
+					<TabsTrigger
+						value="effectiveness"
+						className="flex-1 text-xs sm:text-sm">
 						Effectiveness
-					</TabsTrigger>
-					<TabsTrigger value="management" className="flex-1 text-xs sm:text-sm">
-						Add/Edit
 					</TabsTrigger>
 				</TabsList>
 
@@ -723,24 +1535,36 @@ export default function MedicationsEnhanced() {
 													variant="outline"
 													className="w-full bg-transparent text-xs sm:text-sm">
 													<Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-													<span className="hidden xs:inline">Schedule Review</span>
-													<span className="xs:hidden">Review</span>
+													<span className="hidden xs:inline">
+														Schedule Review
+													</span>
+													<span className="xs:hidden">
+														Review
+													</span>
 												</Button>
 												<Button
 													size="sm"
 													variant="outline"
 													className="w-full bg-transparent text-xs sm:text-sm">
 													<Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-													<span className="hidden xs:inline">Set Reminder</span>
-													<span className="xs:hidden">Remind</span>
+													<span className="hidden xs:inline">
+														Set Reminder
+													</span>
+													<span className="xs:hidden">
+														Remind
+													</span>
 												</Button>
 												<Button
 													size="sm"
 													variant="outline"
 													className="w-full bg-transparent text-xs sm:text-sm">
 													<CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-													<span className="hidden xs:inline">Mark Taken</span>
-													<span className="xs:hidden">Taken</span>
+													<span className="hidden xs:inline">
+														Mark Taken
+													</span>
+													<span className="xs:hidden">
+														Taken
+													</span>
 												</Button>
 												{medication.status ===
 													"Active" && (
@@ -749,8 +1573,12 @@ export default function MedicationsEnhanced() {
 														variant="outline"
 														className="w-full bg-transparent text-red-600 text-xs sm:text-sm">
 														<AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-														<span className="hidden xs:inline">Report Side Effect</span>
-														<span className="xs:hidden">Report</span>
+														<span className="hidden xs:inline">
+															Report Side Effect
+														</span>
+														<span className="xs:hidden">
+															Report
+														</span>
 													</Button>
 												)}
 											</div>
@@ -760,6 +1588,38 @@ export default function MedicationsEnhanced() {
 							</Card>
 						))}
 					</div>
+				</TabsContent>
+
+				<TabsContent value="timeline">
+					<Card className="bg-white shadow-lg">
+						<CardHeader>
+							<CardTitle className="text-xl text-navy-600 flex items-center">
+								<Activity className="mr-2 h-5 w-5" />
+								Medication Timeline (Gantt Chart)
+							</CardTitle>
+						</CardHeader>
+						<CardContent>{renderGanttChart()}</CardContent>
+					</Card>
+				</TabsContent>
+
+				<TabsContent value="table-management">
+					<Card className="bg-white shadow-lg">
+						<CardHeader>
+							<CardTitle className="text-xl text-navy-600 flex items-center justify-between">
+								<div className="flex items-center">
+									<Table className="mr-2 h-5 w-5" />
+									Medication Management Table
+								</div>
+								<Button
+									onClick={() => setShowAddForm(true)}
+									className="text-xs sm:text-sm">
+									<Plus className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+									Add Medication
+								</Button>
+							</CardTitle>
+						</CardHeader>
+						<CardContent>{renderManagementTable()}</CardContent>
+					</Card>
 				</TabsContent>
 
 				<TabsContent value="adherence">
@@ -781,129 +1641,6 @@ export default function MedicationsEnhanced() {
 							</CardTitle>
 						</CardHeader>
 						<CardContent>{renderEffectivenessChart()}</CardContent>
-					</Card>
-				</TabsContent>
-
-				<TabsContent value="management">
-					<Card className="bg-white shadow-lg">
-						<CardHeader>
-							<CardTitle className="text-xl text-navy-600">
-								Add/Edit Medications
-							</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<div className="space-y-6">
-								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-									<div>
-										<Label htmlFor="med-name">
-											Medication Name
-										</Label>
-										<Input
-											id="med-name"
-											placeholder="Enter medication name"
-											value={newMedication.name}
-											onChange={(e) =>
-												setNewMedication({
-													...newMedication,
-													name: e.target.value,
-												})
-											}
-										/>
-									</div>
-									<div>
-										<Label htmlFor="med-dosage">
-											Dosage
-										</Label>
-										<Input
-											id="med-dosage"
-											placeholder="e.g., 500mg"
-											value={newMedication.dosage}
-											onChange={(e) =>
-												setNewMedication({
-													...newMedication,
-													dosage: e.target.value,
-												})
-											}
-										/>
-									</div>
-									<div>
-										<Label htmlFor="med-frequency">
-											Frequency
-										</Label>
-										<Select
-											value={newMedication.frequency}
-											onValueChange={(value) =>
-												setNewMedication({
-													...newMedication,
-													frequency: value,
-												})
-											}>
-											<SelectTrigger>
-												<SelectValue placeholder="Select frequency" />
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="once-daily">
-													Once daily
-												</SelectItem>
-												<SelectItem value="twice-daily">
-													Twice daily
-												</SelectItem>
-												<SelectItem value="three-times-daily">
-													Three times daily
-												</SelectItem>
-												<SelectItem value="four-times-daily">
-													Four times daily
-												</SelectItem>
-												<SelectItem value="as-needed">
-													As needed
-												</SelectItem>
-											</SelectContent>
-										</Select>
-									</div>
-									<div>
-										<Label htmlFor="med-duration">
-											Duration
-										</Label>
-										<Input
-											id="med-duration"
-											placeholder="e.g., 30 days, ongoing"
-											value={newMedication.duration}
-											onChange={(e) =>
-												setNewMedication({
-													...newMedication,
-													duration: e.target.value,
-												})
-											}
-										/>
-									</div>
-									<div className="col-span-2">
-										<Label htmlFor="med-indication">
-											Indication
-										</Label>
-										<Textarea
-											id="med-indication"
-											placeholder="Enter indication for this medication"
-											value={newMedication.indication}
-											onChange={(e) =>
-												setNewMedication({
-													...newMedication,
-													indication: e.target.value,
-												})
-											}
-										/>
-									</div>
-								</div>
-								<div className="flex space-x-4">
-									<Button>Add Medication</Button>
-									<Button variant="outline">
-										Save as Template
-									</Button>
-									<Button variant="outline">
-										Import from Previous Prescription
-									</Button>
-								</div>
-							</div>
-						</CardContent>
 					</Card>
 				</TabsContent>
 			</Tabs>
