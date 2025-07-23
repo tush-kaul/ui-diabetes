@@ -963,6 +963,10 @@ export default function MedicationsEnhanced() {
 	}
 
 	interface ManagementMedication extends Omit<Medication, "status"> {
+		name: string;
+		type: string;
+		frequency: string;
+		dosage: string;
 		remarks: string;
 		prescribedBy: string;
 		lastModified: string;
@@ -1145,7 +1149,7 @@ export default function MedicationsEnhanced() {
 										<td className="p-2 sm:p-3">
 											<div>
 												<div className="font-medium">
-													{medication.name}
+													{medication?.name}
 												</div>
 												<div className="text-xs text-gray-600">
 													{medication.type}
@@ -1310,9 +1314,13 @@ export default function MedicationsEnhanced() {
 															)
 														) {
 															setManagementMedications(
-																(prev) =>
+																(
+																	prev: ManagementMedication[]
+																) =>
 																	prev.filter(
-																		(m) =>
+																		(
+																			m: ManagementMedication
+																		) =>
 																			m.id !==
 																			medication.id
 																	)
@@ -1339,13 +1347,15 @@ export default function MedicationsEnhanced() {
 						Active:{" "}
 						{
 							managementMedications.filter(
-								(m) => m.status === "Active"
+								(m: ManagementMedication) =>
+									m.status === "Active"
 							).length
 						}{" "}
 						| Stopped:{" "}
 						{
 							managementMedications.filter(
-								(m) => m.status === "Stopped"
+								(m: ManagementMedication) =>
+									m.status === "Stopped"
 							).length
 						}
 					</p>
