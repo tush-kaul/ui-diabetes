@@ -4,4 +4,4 @@
 
 Your project is live at:
 
-**[https://vercel.com/tush-kauls-projects/v0-patient-dashboard-design](https://vercel.com/tush-kauls-projects/v0-patient-dashboard-design)**
+**[https://patient-dashboard-design-xi.vercel.app](https://patient-dashboard-design-xi.vercel.app)**
