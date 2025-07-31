@@ -57,7 +57,7 @@ import {
 
 interface AssessmentItem {
 	name: string;
-	icon: React.ComponentType;
+	icon: React.ComponentType<{ className?: string }>;
 	status: string;
 	actualDiagnosis: string;
 	lastAssessed: string;
@@ -919,11 +919,11 @@ export default function ComprehensiveAssessmentFunctional() {
 														</Button>
 													</div>
 													<canvas
-														ref={(el) =>
-															(canvasRefs.current[
+														ref={(el) => {
+															canvasRefs.current[
 																item.name
-															] = el)
-														}
+															] = el;
+														}}
 														width={300}
 														height={400}
 														className="border rounded cursor-crosshair bg-gray-50"

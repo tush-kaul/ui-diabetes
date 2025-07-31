@@ -7,6 +7,32 @@ import { Printer, Download } from "lucide-react";
 export default function AdvicePrintableFixed() {
 	const currentDate = new Date().toLocaleDateString("en-GB");
 
+	const handlePrint = () => {
+		const content = document.getElementById("print-section");
+		const pri = window.open("", "", "height=800,width=1000");
+		if (!pri || !content) return;
+
+		pri.document.write("<html><head><title>Print</title>");
+		pri.document.write("<style>");
+		pri.document.write(`
+		  body { font-family: sans-serif; font-size: 12px; padding: 20px; }
+		  @media print {
+			.page-break-before { page-break-before: always; }
+			.page-break-inside-avoid { page-break-inside: avoid; }
+		  }
+		`);
+		pri.document.write("</style>");
+		pri.document.write("</head><body>");
+		pri.document.write(content.innerHTML);
+		pri.document.write("</body></html>");
+		pri.document.close();
+		pri.focus();
+		setTimeout(() => {
+			pri.print();
+			pri.close();
+		}, 500);
+	};
+
 	return (
 		<div className="p-4 sm:p-8 bg-white">
 			<div className="max-w-4xl mx-auto">
@@ -34,7 +60,10 @@ export default function AdvicePrintableFixed() {
 				</div>
 
 				{/* Printable Content */}
-				<div className="printable-content">
+				<div
+					className="printable-content"
+					id="print-section"
+				>
 					{/* Patient Information */}
 					<Card className="mb-4 page-break-inside-avoid">
 						<CardHeader className="text-center">
@@ -465,50 +494,24 @@ export default function AdvicePrintableFixed() {
 				</div>
 			</div>
 
-			<style jsx>{`
+			<style
+				jsx
+				global
+			>{`
 				@media print {
-					.no-print {
-						display: none !important;
+					body * {
+						visibility: hidden;
 					}
-					.printable-content {
-						font-size: 11px;
-						line-height: 1.3;
+					#print-section,
+					#print-section * {
+						visibility: visible;
 					}
-					.page-break-before {
-						page-break-before: always;
+					#print-section {
+						position: absolute;
+						left: 0;
+						top: 0;
+						width: 100%;
 					}
-					.page-break-inside-avoid {
-						page-break-inside: avoid;
-					}
-					body {
-						margin: 0;
-						padding: 0;
-					}
-					.max-w-4xl {
-						max-width: none;
-					}
-					.p-8 {
-						padding: 0.5rem;
-					}
-					.mb-4 {
-						margin-bottom: 0.75rem;
-					}
-					.mb-6 {
-						margin-bottom: 1rem;
-					}
-					.space-y-1 > * + * {
-						margin-top: 0.25rem;
-					}
-					.space-y-3 > * + * {
-						margin-top: 0.5rem;
-					}
-					.space-y-4 > * + * {
-						margin-top: 0.75rem;
-					}
-				}
-				@page {
-					size: A4;
-					margin: 1cm;
 				}
 			`}</style>
 		</div>
