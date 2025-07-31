@@ -1,0 +1,105 @@
+Second revised version comments + Dr Jananee’s comments
+
+Overview section
+1.	3x follow up in the overview can be deleted
+2.	Plan for building medical library to standardize chief complaints
+3.	Handling chief complaints – Reality check….Voice note? Handling language and describing vague complaints
+4.	Diagnosis time in years can be made self updated as years pass on (e.g. Diabetes since 30 years as on 2025, in 2026 it has to update as 31 years
+5.	Key health metrics section: 
+a.	Add serum creatinine, Potassium and Urine ACR
+b.	Need to reflect with deranged scores (e.g. PHQ 2/ GAD2, PHQ9, GAD9)
+c.	LDL cut off score is different for people with complication or without complication, especially with high Vs Moderate/ mild cardiovascular risk
+d.	Can we present key health metrics values with icons of increased , decreased or same - rather than just saying one number e.g. HbA1c 8.2 increased compared to last visit value of 7.5
+6.	Abnormal metrics section can come below key health metrics
+7.	Critical alerts – Need to reflect with deranged scores as above, for further action
+8.	Medications: 
+a.	Need to club categories of medications which can be color coded e.g. Those for diabetes, those for hypertension, those for blood thinner, those for cholesterol
+b.	For MEDICATIONS POST CONSULTATION, ON ADVICE– based on increase in dose or increase in frequency or addition of the drug AS COMPARED TO CURRENT MEDICATIONS; we can highlight with icons with arrow marks for respective medications beside dose or frequency as well as highlight with different box for newly added medications.
+9.	Target goal section: Percent achieved or not achieved can be cut. Target goal section is a repeat of lab values/key health metrics. Within key health metrics- make subsection on ABC if needed (My view). Instead time in range metrics would be better. e.g. for BP it makes sense. If patient is wearing CGM sensor, TIR, TITR TBR makes sense (My view)
+10.	Target organ assessment and status section: 
+a.	Please add the word “and status” beside assessment
+b.	MASLD, Diabetic foot need to be added 
+c.	HYPERLINK with EACH TARGET ORGAN with DETAILED TARGET ORGAN IN COMPREHENSIVE ASSESSMENT SECTION
+d.	Last done with date, actual diagnosis and actual values are enough (instead of saying positive). Positive, negative can be deleted under this section. Instead of negative, it can be written as pending assessment or status unknown.
+11.	ADHERENCE: MEDICATIONS, FOLLOW UP CONSULTATIONS, SELF MONITORING BLOOD SUGAR AND BLOOD PRESSURE
+12.	Recent changes: Can reflect with newly diagnosed disease, recent infections/ hospitalizations apart from medications changes, family dynamics changes e.g. caregiver / spouse shifted or death etc.
+
+Medication section
+a.	Current and effectiveness tab can be deleted. What is the value add for doctor interface with these? What did you have in your mind when you designed these?
+b.	Medications tab can have only timelines and management tabs. Rest can be deleted
+c.	Timeline tab is ok. However, it can be simplified if possible. Can this be presented with months/ possible with date? dd/mm/yyyy
+d.	Timeline tab- Not able to understand step up or step down with medication. Dose and frequency can be represented with color coding (e.g for step up for dosing - Metformin + Glimepride 500mg/1mg to Metoformin + Glimepride 500/2mg). Likewise for all other medications
+e.	Management tab is ok. However, align as below
+i.	Need to club categories of medications which can be color coded e.g. Those for diabetes, those for hypertension, those for blood thinner, those for cholesterol
+ii.	Please include details about timing of medications:  after food or before food and how many minutes before food etc.
+iii.	Adherence tab can have self-reported adverse effects
+iv.	For MEDICATIONS POST CONSULTATION, ON ADVICE– based on increase in dose (say 10 mg to 20 mg) or increase in frequency (say morning and night Vs prescribed for morning only earlier) or addition of the drug AS COMPARED TO CURRENT MEDICATIONS; we can highlight with icons with arrow marks for respective medications beside dose or frequency as well as highlight with different box for newly added medications.
+
+Lab results/ monitoring section
+a.	Since there are many, and every specialist may not need each/ everything and to make it less overwhelming; we can have feature + within box icon to expand and – within the box icon for hide; instead of big graphs
+b.	Lab results/ monitoring section can have only trackers and reports tab
+c.	Trackers can have serum creatinine, urine ACR, Potassium, Urine microalbuminuria which nephrologists and internal medicine specialists can view  
+
+Comprehensive assessment, status, action plan section (THIS NEEDS IN DEPTH MEETINGS WITH EACH SPECIALIST AND SUPERSPECIALIST- WHAT DO YOU DO TO ASSESS EACH, WHEN DO YOU TAKE ACTION, WHAT WILL BE THE ACTION, HOW DO YOU WANT TO VIEW, WHAT DO YOU WANT TO VIEW;;;;; RULE ENGINE- CUT OFF SCORES/VALUES/RESPONSE TO QUESTION)
+a.	Is this section needed at all? Instead can have SEPARATE TAB FOR ORDER TEST/INVESTIGATIONS AND SEPARATE TAB FOR REFERRALS
+b.	Delete skin changes, sexual health and autonomic neuropathy
+c.	Status of assessment: Last done with date; actual diagnosis and actual values are enough e.g. Moderate NPDR (instead of saying positive). Positive, negative can be deleted under this section. Instead of negative, it can be written as pending assessment or status unknown.
+d.	There is no need to have graph for which there are no values or if it is based on symptom questions- which can be categorical – yes/ no e.g., Neuropathy. It may be needed for those with continuous variable e.g. Nephropathy
+e.	Apart from subsections on investigations and referrals, add other options as “continue same” , optimize medications/ Add medications. “Continue same” because sometimes ECG changes or ECHO changes may not change and action plan won’t be there every time. 
+f.	Can have feature for making “personal notes” (if any)- e.g. for neuropathy, if there is carpel tunnel syndrome and need to write referral to plastic surgery….then can write comments to plastic surgeon along with the referral. This can be more intuitive.
+g.	To add feature for drawing e.g. for neuropathy humanoid feature with shading option as drawn on the sheet for IP or OP patients
+h.	Follow up can’t be generalized 
+
+
+Lifestyle section (THIS NEED IN DEPTH MEETINGS- WHAT IS NEEDED, WHAT IS NOT NEEDED)
+a.	Patient’s lifestyle summary- one overview should be enough. Not so many tabs. e.g. These are the diet issues noted. This has to be presented in such a way so that it can be quickly addressed. Granularity need to be presented (Use LLMs to ask patients- say about carbohydrates etc)
+b.	This has to be very much simplified. Doctors may see only overview maximum. May be in depth for only nutritionists and lifestyle specialist 
+c.	Diet: High fiber diet, Complex grains, Portion size as food plate principle, 4-5 servings of fruits and vegetables, appropriate timings of meals and snacks as check boxes
+d.	Physical activity—either step count/minutes of walk/yoga/meditation/any aerobic activity; Add strength training—number of days  
+e.	Habits section: Other than smoking and alcohol, to add substance abuse
+f.	Stress management can be retained here (Stress management elsewhere can be deleted to avoid duplication)
+
+Advice section
+a.	Name, Age, Sex, years, Address
+b.	Diagnosis
+c.	Key health metrics
+d.	Comprehensive assessment status
+e.	Current medications/prescriptions
+i.	For MEDICATIONS POST CONSULTATION, ON ADVICE– based on increase in dose or increase in frequency or addition of the drug AS COMPARED TO CURRENT MEDICATIONS; we can highlight with icons with arrow marks for respective medications beside dose or frequency as well as highlight with different box for newly added medications.
+f.	Follow up instructions with referrals, lab investigations ordered for next visit, follow up dates for consultations 
+
+AI decision support/ recommended actions section (Separate tab, carrot for doctors to use)
+a.	Beside the recommended actions (it was there in version 1……To which we can question doctors what else would you like me to do…. How Gemini or any other LLM ask e.g. Say for ophthalmology referral (which is one of recommended action, we can have referral draft ready; another example with diet issues, we can have generation of diet chart etc)
+
+General instructions across: 
+a.	Color coding need to be uniform and standard for categories such as normal, deranged….Red, orange and green 
+b.	Can be made more appealing
+c.	Range of lab values need to be added (need to ensure for each of it)
+d.	FORMULAS need to be added e.g. for calculating BMI based on height and weight, eGFR based on serum creatinine value etc. (Need to ask for what else they need formulas)
+e.	OCR technology? For reading reports and auto filling values in particular section
+f.	Screen with 
+i.	PHQ 2 (for depression) and GAD 2 (for anxiety) initially and screen positives only to be screened further with PHQ9 and GAD7 (for further diagnosis); 
+ii.	Screening for Obstructive Sleep Apnea (OSA) assessment (STOP BANG questionnaire), 
+iii.	WHO ISH scoring for CV risk, 
+iv.	FIB 4 scoring (for MASLD?), 
+v.	Michigan scoring  for neuropathy need to be added; 
+vi.	If BMI is > 30, trigger to evaluate for OSA
+
+Other queries/ comments 
+a.	Chief complaints, Select from WhatsApp?
+b.	Poor/ moderate/ stable?
+c.	Edit metrics?
+d.	ASCVD risk score can’t be this less for this particular case. Online calculators are available. But this is not reliable for young patients hence WHO ISH risk score will be used to assess cardiovascular risk score
+e.	Abnormal metrics categories as high and medium are based on what?
+f.	Icons for target organ is not appropriate for few e.g. Nephropathy, PVD
+g.	HbA1c trend analysis separately in overview is not needed?
+h.	Medications, current tab helps patients with the details, and not every detail. May be self-reported side effects can be there in the adherence section
+i.	Colour code need to be standardized
+j.	Lab results/ monitoring – upload files- from where? And to where?
+k.	PHQ 9 GAD7 scores verified? With severity categories?
+l.	Mental health graph: Not understandable
+m.	Assessments will need to be done by us or physician assistant (Interns, PGs)
+n.	Can we make dashboard even more appealing?
+o.	What does 5 active, 2 pending and 1 due mean?
+p.	Weight and BMI trends graph?
+q.	Communications section need clarity? 

@@ -1,782 +1,1709 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { Toggle } from "@/components/ui/toggle"
+import type React from "react";
+
+import { useState, useRef } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
-  Eye,
-  Heart,
-  Brain,
-  Activity,
-  Zap,
-  User,
-  Footprints,
-  Stethoscope,
-  LeafIcon as Liver,
-  BarChart3,
-  Table,
-  Plus,
-} from "lucide-react"
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  ReferenceLine,
-  ReferenceArea,
-} from "recharts"
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Toggle } from "@/components/ui/toggle";
+import {
+	Eye,
+	Heart,
+	Brain,
+	Activity,
+	Zap,
+	Footprints,
+	Stethoscope,
+	LeafIcon as Liver,
+	BarChart3,
+	Table,
+	Plus,
+	Users,
+	Palette,
+	Save,
+	TestTube,
+	UserCheck,
+} from "lucide-react";
+import {
+	LineChart,
+	Line,
+	XAxis,
+	YAxis,
+	Tooltip,
+	ResponsiveContainer,
+	CartesianGrid,
+	ReferenceLine,
+	ReferenceArea,
+} from "recharts";
+
+interface AssessmentItem {
+	name: string;
+	icon: React.ComponentType;
+	status: string;
+	actualDiagnosis: string;
+	lastAssessed: string;
+	nextDue: string;
+	riskLevel?: string;
+	investigations: string[];
+	consultations: string[];
+	actionOptions: string[];
+	selectedAction?: string;
+	personalNotes?: string;
+	hasDrawing?: boolean;
+	drawingData?: any;
+	followUpCustom?: string;
+	trendData?: any[];
+	hasContinuousData?: boolean;
+	reports: {
+		date: string;
+		type: string;
+		finding: string;
+		file: string;
+	}[];
+}
 
 export default function ComprehensiveAssessmentFunctional() {
-  const [viewMode, setViewMode] = useState({
-    mentalHealth: "chart",
-    retinopathy: "chart",
-    nephropathy: "chart",
-  })
+	const [viewMode, setViewMode] = useState({
+		nephropathy: "chart",
+		mentalHealth: "chart",
+	});
 
-  const [selectedAssessment, setSelectedAssessment] = useState("")
-  const [newPhq9, setNewPhq9] = useState("")
-  const [newGad7, setNewGad7] = useState("")
-  const [newStress, setNewStress] = useState("")
+	const [selectedAssessment, setSelectedAssessment] = useState("");
+	const [personalNotes, setPersonalNotes] = useState<Record<string, string>>(
+		{}
+	);
+	const [actionPlans, setActionPlans] = useState<Record<string, string>>({});
+	const [drawingData, setDrawingData] = useState<Record<string, any>>({});
+	const [customFollowUp, setCustomFollowUp] = useState<
+		Record<string, string>
+	>({});
 
-  // Mental Health Data with threshold zones
-  const mentalHealthData = [
-    { date: "2024-01", phq9: 4, gad7: 3, stressLevel: 6 },
-    { date: "2024-02", phq9: 3, gad7: 4, stressLevel: 5 },
-    { date: "2024-03", phq9: 3, gad7: 3, stressLevel: 4 },
-    { date: "2024-04", phq9: 4, gad7: 3, stressLevel: 5 },
-    { date: "2024-05", phq9: 3, gad7: 3, stressLevel: 4 },
-    { date: "2024-06", phq9: 3, gad7: 3, stressLevel: 4 },
-    { date: "2024-07", phq9: 3, gad7: 3, stressLevel: 3 },
-  ]
+	// Drawing canvas refs
+	const canvasRefs = useRef<Record<string, HTMLCanvasElement | null>>({});
+	const [isDrawing, setIsDrawing] = useState(false);
 
-  const assessmentItems = [
-    {
-      name: "Retinopathy",
-      icon: Eye,
-      status: "Moderate NPDR",
-      lastAssessed: "2023-10-15",
-      riskLevel: "high",
-      investigations: ["Fundus Photography", "OCT", "Fluorescein Angiography"],
-      consultations: ["Ophthalmology"],
-      followUp: "6 months",
-      trendData: [
-        { date: "2021", severity: 1 },
-        { date: "2022", severity: 2 },
-        { date: "2023", severity: 3 },
-      ],
-      reports: [
-        { date: "2023-10-15", type: "Fundus Photography", finding: "Moderate NPDR", file: "fundus_2023.pdf" },
-        { date: "2022-10-15", type: "OCT", finding: "Mild changes", file: "oct_2022.pdf" },
-      ],
-    },
-    {
-      name: "Nephropathy",
-      icon: Activity, // Changed from Kidney to Activity for kidney function
-      status: "Normal",
-      lastAssessed: "2024-07-01",
-      riskLevel: "low",
-      investigations: ["Serum Creatinine", "Urine ACR", "eGFR"],
-      consultations: ["Nephrology"],
-      followUp: "1 year",
-      trendData: [
-        { date: "2022", creatinine: 0.9 },
-        { date: "2023", creatinine: 1.0 },
-        { date: "2024", creatinine: 1.1 },
-      ],
-      reports: [{ date: "2024-07-01", type: "Lab Report", finding: "Normal kidney function", file: "kidney_2024.pdf" }],
-    },
-    {
-      name: "Neuropathy",
-      icon: Zap, // Changed to Zap for nerve function
-      status: "Asymptomatic",
-      lastAssessed: "2023-10-15",
-      riskLevel: "moderate",
-      investigations: ["Monofilament Test", "Vibration Sense", "NCV Study"],
-      consultations: ["Neurology", "Podiatry"],
-      followUp: "1 year",
-      trendData: [
-        { date: "2022", score: 0 },
-        { date: "2023", score: 1 },
-      ],
-      reports: [],
-    },
-    {
-      name: "Autonomic Neuropathy",
-      icon: Brain, // Brain for autonomic nervous system
-      status: "Not Assessed",
-      lastAssessed: "Never",
-      riskLevel: "unknown",
-      investigations: ["Heart Rate Variability", "Orthostatic BP", "Gastroparesis Assessment"],
-      consultations: ["Cardiology", "Gastroenterology"],
-      followUp: "As needed",
-      trendData: [],
-      reports: [],
-    },
-    {
-      name: "IHD",
-      icon: Heart,
-      status: "ECG Changes",
-      lastAssessed: "2023-10-15",
-      riskLevel: "moderate",
-      investigations: ["ECG", "ECHO", "Stress Test", "Coronary Angiography"],
-      consultations: ["Cardiology"],
-      followUp: "6 months",
-      trendData: [
-        { date: "2022", ejectionFraction: 62 },
-        { date: "2023", ejectionFraction: 60 },
-      ],
-      reports: [
-        { date: "2023-10-15", type: "ECG", finding: "ST depression", file: "ecg_2023.pdf" },
-        { date: "2023-10-15", type: "ECHO", finding: "EF 60%", file: "echo_2023.pdf" },
-      ],
-    },
-    {
-      name: "CVA/Stroke",
-      icon: Brain,
-      status: "No History",
-      lastAssessed: "2023-10-15",
-      riskLevel: "moderate",
-      investigations: ["Carotid Doppler", "MRI Brain", "CT Angiography"],
-      consultations: ["Neurology", "Vascular Surgery"],
-      followUp: "2 years",
-      trendData: [],
-      reports: [],
-    },
-    {
-      name: "PVD",
-      icon: Stethoscope, // Stethoscope for peripheral vascular assessment
-      status: "Not Assessed",
-      lastAssessed: "Never",
-      riskLevel: "unknown",
-      investigations: ["ABI", "Doppler Studies", "CT Angiography"],
-      consultations: ["Vascular Surgery"],
-      followUp: "1 year",
-      trendData: [],
-      reports: [],
-    },
-    {
-      name: "MASLD",
-      icon: Liver, // Liver icon for liver disease
-      status: "Not Assessed",
-      lastAssessed: "Never",
-      riskLevel: "unknown",
-      investigations: ["Liver Function Tests", "Ultrasound Abdomen", "FibroScan"],
-      consultations: ["Hepatology"],
-      followUp: "1 year",
-      trendData: [],
-      reports: [],
-    },
-    {
-      name: "Diabetic Foot",
-      icon: Footprints, // Footprints for diabetic foot
-      status: "Low Risk",
-      lastAssessed: "2023-10-15",
-      riskLevel: "low",
-      investigations: ["Foot Examination", "Doppler Studies", "X-ray Foot"],
-      consultations: ["Podiatry", "Vascular Surgery"],
-      followUp: "1 year",
-      trendData: [
-        { date: "2022", riskScore: 1 },
-        { date: "2023", riskScore: 1 },
-      ],
-      reports: [],
-    },
-    {
-      name: "Skin Changes",
-      icon: User,
-      status: "Granuloma Annulare",
-      lastAssessed: "2024-01-15",
-      riskLevel: "low",
-      investigations: ["Skin Biopsy", "Dermoscopy"],
-      consultations: ["Dermatology"],
-      followUp: "6 months",
-      trendData: [],
-      reports: [
-        { date: "2024-01-15", type: "Biopsy", finding: "Granuloma Annulare confirmed", file: "biopsy_2024.pdf" },
-      ],
-    },
-    {
-      name: "Sexual Health",
-      icon: User,
-      status: "Not Assessed",
-      lastAssessed: "Never",
-      riskLevel: "unknown",
-      investigations: ["Testosterone Levels", "IIEF Questionnaire"],
-      consultations: ["Urology", "Endocrinology"],
-      followUp: "As needed",
-      trendData: [],
-      reports: [],
-    },
-  ]
+	// Mental Health Data
+	const [newPhq9, setNewPhq9] = useState("");
+	const [newGad7, setNewGad7] = useState("");
+	const [newStress, setNewStress] = useState("");
+	const [mentalHealthData, setMentalHealthData] = useState([
+		{ date: "Jan 2024", phq9: 3, gad7: 2, stressLevel: 3 },
+		{ date: "Apr 2024", phq9: 2, gad7: 3, stressLevel: 4 },
+		{ date: "Jul 2024", phq9: 3, gad7: 3, stressLevel: 3 },
+	]);
 
-  const getRiskColor = (risk: string) => {
-    switch (risk) {
-      case "high":
-        return "text-red-500 bg-red-50"
-      case "moderate":
-        return "text-yellow-500 bg-yellow-50"
-      case "low":
-        return "text-green-500 bg-green-50"
-      default:
-        return "text-gray-500 bg-gray-50"
-    }
-  }
+	// Orders and Referrals State
+	const [pendingOrders, setPendingOrders] = useState<string[]>([]);
+	const [pendingReferrals, setPendingReferrals] = useState<string[]>([]);
 
-  const toggleViewMode = (metric: string) => {
-    setViewMode((prev) => ({
-      ...prev,
-      [metric]: prev[metric] === "chart" ? "table" : "chart",
-    }))
-  }
+	const assessmentItems: AssessmentItem[] = [
+		{
+			name: "Retinopathy",
+			icon: Eye,
+			status: "Assessed",
+			actualDiagnosis:
+				"Moderate NPDR with microaneurysms and hard exudates",
+			lastAssessed: "15/10/2023",
+			nextDue: "15/04/2024",
+			riskLevel: "moderate",
+			investigations: [
+				"Fundus Photography",
+				"OCT",
+				"Fluorescein Angiography",
+			],
+			consultations: ["Ophthalmology"],
+			actionOptions: [
+				"continue same",
+				"optimize medications",
+				"add medications",
+				"refer to specialist",
+				"order investigations",
+			],
+			selectedAction: "continue same",
+			personalNotes: "",
+			hasDrawing: false,
+			hasContinuousData: false,
+			followUpCustom: "6 months",
+			reports: [
+				{
+					date: "15/10/2023",
+					type: "Fundus Photography",
+					finding: "Moderate NPDR with microaneurysms",
+					file: "fundus_oct2023.pdf",
+				},
+			],
+		},
+		{
+			name: "Nephropathy",
+			icon: Activity,
+			status: "Assessed",
+			actualDiagnosis:
+				"Normal kidney function - eGFR 85 ml/min/1.73m², ACR 15 mg/g",
+			lastAssessed: "01/07/2024",
+			nextDue: "01/07/2025",
+			riskLevel: "low",
+			investigations: [
+				"Serum Creatinine",
+				"Urine ACR",
+				"eGFR",
+				"Urine Microalbuminuria",
+			],
+			consultations: ["Nephrology"],
+			actionOptions: [
+				"continue same",
+				"optimize medications",
+				"add medications",
+				"order investigations",
+			],
+			selectedAction: "continue same",
+			personalNotes: "",
+			hasDrawing: false,
+			hasContinuousData: true,
+			followUpCustom: "12 months",
+			trendData: [
+				{ date: "2022", creatinine: 0.9, egfr: 88, acr: 12 },
+				{ date: "2023", creatinine: 1.0, egfr: 86, acr: 14 },
+				{ date: "2024", creatinine: 1.1, egfr: 85, acr: 15 },
+			],
+			reports: [
+				{
+					date: "01/07/2024",
+					type: "Lab Report",
+					finding: "Normal kidney function",
+					file: "kidney_jul2024.pdf",
+				},
+			],
+		},
+		{
+			name: "Neuropathy",
+			icon: Zap,
+			status: "Assessed",
+			actualDiagnosis:
+				"Asymptomatic - Normal monofilament test, intact vibration sense",
+			lastAssessed: "15/10/2023",
+			nextDue: "15/10/2024",
+			riskLevel: "low",
+			investigations: [
+				"Monofilament Test",
+				"Vibration Sense",
+				"NCV Study",
+			],
+			consultations: ["Neurology", "Podiatry"],
+			actionOptions: [
+				"continue same",
+				"optimize medications",
+				"add medications",
+				"refer to specialist",
+				"order investigations",
+			],
+			selectedAction: "continue same",
+			personalNotes: "",
+			hasDrawing: true,
+			hasContinuousData: false,
+			followUpCustom: "12 months",
+			reports: [],
+		},
+		{
+			name: "IHD (Ischemic Heart Disease)",
+			icon: Heart,
+			status: "Assessed",
+			actualDiagnosis:
+				"Mild ECG changes - T wave flattening in V5-V6, ECHO EF 60%",
+			lastAssessed: "15/10/2023",
+			nextDue: "15/04/2024",
+			riskLevel: "moderate",
+			investigations: [
+				"ECG",
+				"ECHO",
+				"Stress Test",
+				"Coronary Angiography",
+			],
+			consultations: ["Cardiology"],
+			actionOptions: [
+				"continue same",
+				"optimize medications",
+				"add medications",
+				"refer to specialist",
+				"order investigations",
+			],
+			selectedAction: "optimize medications",
+			personalNotes: "",
+			hasDrawing: false,
+			hasContinuousData: true,
+			followUpCustom: "6 months",
+			trendData: [
+				{ date: "2022", ejectionFraction: 62, troponin: 0.01 },
+				{ date: "2023", ejectionFraction: 60, troponin: 0.02 },
+			],
+			reports: [
+				{
+					date: "15/10/2023",
+					type: "ECG",
+					finding: "T wave flattening V5-V6",
+					file: "ecg_oct2023.pdf",
+				},
+				{
+					date: "15/10/2023",
+					type: "ECHO",
+					finding: "EF 60%, mild LV dysfunction",
+					file: "echo_oct2023.pdf",
+				},
+			],
+		},
+		{
+			name: "CVA/Stroke",
+			icon: Brain,
+			status: "Pending Assessment",
+			actualDiagnosis: "Status unknown - No previous assessment done",
+			lastAssessed: "Never",
+			nextDue: "Due now",
+			riskLevel: "unknown",
+			investigations: ["Carotid Doppler", "MRI Brain", "CT Angiography"],
+			consultations: ["Neurology", "Vascular Surgery"],
+			actionOptions: [
+				"order investigations",
+				"refer to specialist",
+				"continue same",
+			],
+			selectedAction: "order investigations",
+			personalNotes: "",
+			hasDrawing: false,
+			hasContinuousData: false,
+			followUpCustom: "Based on findings",
+			trendData: [],
+			reports: [],
+		},
+		{
+			name: "PVD (Peripheral Vascular Disease)",
+			icon: Stethoscope,
+			status: "Pending Assessment",
+			actualDiagnosis: "Status unknown - No previous assessment done",
+			lastAssessed: "Never",
+			nextDue: "Due now",
+			riskLevel: "unknown",
+			investigations: ["ABI", "Doppler Studies", "CT Angiography"],
+			consultations: ["Vascular Surgery"],
+			actionOptions: [
+				"order investigations",
+				"refer to specialist",
+				"continue same",
+			],
+			selectedAction: "order investigations",
+			personalNotes: "",
+			hasDrawing: false,
+			hasContinuousData: false,
+			followUpCustom: "Based on findings",
+			trendData: [],
+			reports: [],
+		},
+		{
+			name: "MASLD (Metabolic Dysfunction-Associated Steatotic Liver Disease)",
+			icon: Liver,
+			status: "Pending Assessment",
+			actualDiagnosis: "Status unknown - No previous assessment done",
+			lastAssessed: "Never",
+			nextDue: "Due now",
+			riskLevel: "unknown",
+			investigations: [
+				"Liver Function Tests",
+				"Ultrasound Abdomen",
+				"FibroScan",
+				"FIB-4 Score",
+			],
+			consultations: ["Hepatology"],
+			actionOptions: [
+				"order investigations",
+				"refer to specialist",
+				"continue same",
+			],
+			selectedAction: "order investigations",
+			personalNotes: "",
+			hasDrawing: false,
+			hasContinuousData: false,
+			followUpCustom: "Based on findings",
+			trendData: [],
+			reports: [],
+		},
+		{
+			name: "Diabetic Foot",
+			icon: Footprints,
+			status: "Assessed",
+			actualDiagnosis:
+				"Low risk - Intact sensation, good circulation, no deformities",
+			lastAssessed: "15/10/2023",
+			nextDue: "15/10/2024",
+			riskLevel: "low",
+			investigations: [
+				"Foot Examination",
+				"Doppler Studies",
+				"X-ray Foot",
+			],
+			consultations: ["Podiatry", "Vascular Surgery"],
+			actionOptions: [
+				"continue same",
+				"refer to specialist",
+				"order investigations",
+			],
+			selectedAction: "continue same",
+			personalNotes: "",
+			hasDrawing: false,
+			hasContinuousData: false,
+			followUpCustom: "12 months",
+			trendData: [],
+			reports: [],
+		},
+	];
 
-  const getScoreColor = (score: number, maxScore: number) => {
-    const percentage = (score / maxScore) * 100
-    if (percentage <= 25) return "#22c55e" // Green
-    if (percentage <= 50) return "#eab308" // Yellow
-    return "#ef4444" // Red
-  }
+	// Drawing functions
+	const startDrawing = (
+		e: React.MouseEvent<HTMLCanvasElement>,
+		assessmentName: string
+	) => {
+		setIsDrawing(true);
+		const canvas = canvasRefs.current[assessmentName];
+		if (canvas) {
+			const rect = canvas.getBoundingClientRect();
+			const ctx = canvas.getContext("2d");
+			if (ctx) {
+				ctx.beginPath();
+				ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+			}
+		}
+	};
 
-  const addMentalHealthScore = () => {
-    if (newPhq9 && newGad7 && newStress) {
-      // Add logic to save new mental health scores
-      console.log("Adding new scores:", { phq9: newPhq9, gad7: newGad7, stress: newStress })
-      setNewPhq9("")
-      setNewGad7("")
-      setNewStress("")
-    }
-  }
+	const draw = (
+		e: React.MouseEvent<HTMLCanvasElement>,
+		assessmentName: string
+	) => {
+		if (!isDrawing) return;
+		const canvas = canvasRefs.current[assessmentName];
+		if (canvas) {
+			const rect = canvas.getBoundingClientRect();
+			const ctx = canvas.getContext("2d");
+			if (ctx) {
+				ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+				ctx.stroke();
+			}
+		}
+	};
 
-  const renderMentalHealthView = () => {
-    const isChart = viewMode.mentalHealth === "chart"
+	const stopDrawing = () => {
+		setIsDrawing(false);
+	};
 
-    return (
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Mental Health Trends</h3>
-          <Toggle
-            pressed={!isChart}
-            onPressedChange={() => toggleViewMode("mentalHealth")}
-            aria-label="Toggle mental health view"
-          >
-            {isChart ? <Table className="h-4 w-4" /> : <BarChart3 className="h-4 w-4" />}
-          </Toggle>
-        </div>
+	const clearDrawing = (assessmentName: string) => {
+		const canvas = canvasRefs.current[assessmentName];
+		if (canvas) {
+			const ctx = canvas.getContext("2d");
+			if (ctx) {
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
+			}
+		}
+	};
 
-        {isChart ? (
-          <>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={mentalHealthData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip
-                  formatter={(value, name) => [
-                    `${value} ${name === "phq9" ? "(PHQ-9)" : name === "gad7" ? "(GAD-7)" : "(Stress)"}`,
-                    name === "phq9" ? "Depression Score" : name === "gad7" ? "Anxiety Score" : "Stress Level",
-                  ]}
-                />
+	const getRiskColor = (risk: string) => {
+		switch (risk) {
+			case "high":
+				return "text-red-600 bg-red-50 border-red-200";
+			case "moderate":
+				return "text-orange-600 bg-orange-50 border-orange-200";
+			case "low":
+				return "text-green-600 bg-green-50 border-green-200";
+			default:
+				return "text-gray-600 bg-gray-50 border-gray-200";
+		}
+	};
 
-                {/* PHQ-9 Threshold Zones with Clear Labels */}
-                <ReferenceArea y1={0} y2={4} fill="#22c55e" fillOpacity={0.1} />
-                <ReferenceArea y1={5} y2={9} fill="#eab308" fillOpacity={0.1} />
-                <ReferenceArea y1={10} y2={27} fill="#ef4444" fillOpacity={0.1} />
+	const getStatusColor = (status: string) => {
+		switch (status) {
+			case "Assessed":
+				return "text-green-600 bg-green-50";
+			case "Pending Assessment":
+				return "text-orange-600 bg-orange-50";
+			default:
+				return "text-gray-600 bg-gray-50";
+		}
+	};
 
-                <ReferenceLine
-                  y={4}
-                  stroke="#22c55e"
-                  strokeDasharray="3 3"
-                  label={{ value: "PHQ-9 Normal: ≤4", position: "topLeft" }}
-                />
-                <ReferenceLine
-                  y={9}
-                  stroke="#eab308"
-                  strokeDasharray="3 3"
-                  label={{ value: "PHQ-9 Mild: 5-9", position: "topLeft" }}
-                />
-                <ReferenceLine
-                  y={4}
-                  stroke="#22c55e"
-                  strokeDasharray="3 3"
-                  label={{ value: "GAD-7 Normal: ≤4", position: "topRight" }}
-                />
+	const handleNotesChange = (assessmentName: string, notes: string) => {
+		setPersonalNotes((prev) => ({
+			...prev,
+			[assessmentName]: notes,
+		}));
+	};
 
-                <Line
-                  type="monotone"
-                  dataKey="phq9"
-                  stroke="#8884d8"
-                  name="PHQ-9 Score"
-                  dot={(props) => {
-                    const { cx, cy, payload } = props
-                    const color = getScoreColor(payload.phq9, 27)
-                    return <circle cx={cx} cy={cy} r={4} fill={color} stroke={color} strokeWidth={2} />
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="gad7"
-                  stroke="#82ca9d"
-                  name="GAD-7 Score"
-                  dot={(props) => {
-                    const { cx, cy, payload } = props
-                    const color = getScoreColor(payload.gad7, 21)
-                    return <circle cx={cx} cy={cy} r={4} fill={color} stroke={color} strokeWidth={2} />
-                  }}
-                />
-                <Line type="monotone" dataKey="stressLevel" stroke="#ffc658" name="Stress Level" />
-              </LineChart>
-            </ResponsiveContainer>
-            <div className="mt-4 flex justify-center space-x-6 text-sm">
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-green-200 rounded"></div>
-                <span>Normal (PHQ-9: ≤4, GAD-7: ≤4)</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-yellow-200 rounded"></div>
-                <span>Mild (PHQ-9: 5-9, GAD-7: 5-9)</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-red-200 rounded"></div>
-                <span>Severe (PHQ-9: ≥10, GAD-7: ≥10)</span>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="border rounded-lg overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="p-3 text-left">Date</th>
-                  <th className="p-3 text-left">PHQ-9</th>
-                  <th className="p-3 text-left">GAD-7</th>
-                  <th className="p-3 text-left">Stress</th>
-                  <th className="p-3 text-left">Thresholds</th>
-                  <th className="p-3 text-left">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {mentalHealthData.map((item, index) => (
-                  <tr key={index} className="border-t">
-                    <td className="p-3">{item.date}</td>
-                    <td className="p-3">
-                      <span style={{ color: getScoreColor(item.phq9, 27) }}>{item.phq9}</span>
-                    </td>
-                    <td className="p-3">
-                      <span style={{ color: getScoreColor(item.gad7, 21) }}>{item.gad7}</span>
-                    </td>
-                    <td className="p-3">{item.stressLevel}/10</td>
-                    <td className="p-3 text-xs text-gray-600">
-                      PHQ-9: Normal ≤4, Mild 5-9, Severe ≥10
-                      <br />
-                      GAD-7: Normal ≤4, Mild 5-9, Severe ≥10
-                    </td>
-                    <td className="p-3">
-                      <Badge variant={item.phq9 <= 4 && item.gad7 <= 4 ? "default" : "destructive"}>
-                        {item.phq9 <= 4 && item.gad7 <= 4 ? "Normal" : "Elevated"}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    )
-  }
+	const handleActionChange = (assessmentName: string, action: string) => {
+		setActionPlans((prev) => ({
+			...prev,
+			[assessmentName]: action,
+		}));
+	};
 
-  return (
-    <div className="p-8 bg-gradient-to-br from-gray-50 to-gray-100">
-      <h1 className="text-3xl font-bold text-navy-600 mb-6">
-        Comprehensive Assessment of Complications and Comorbidities
-      </h1>
+	const handleFollowUpChange = (assessmentName: string, followUp: string) => {
+		setCustomFollowUp((prev) => ({
+			...prev,
+			[assessmentName]: followUp,
+		}));
+	};
 
-      <Tabs defaultValue="complications" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="complications">Complications Assessment</TabsTrigger>
-          <TabsTrigger value="mental-health">Mental Health Tracking</TabsTrigger>
-        </TabsList>
+	const addToOrders = (investigation: string) => {
+		setPendingOrders((prev) => [...prev, investigation]);
+	};
 
-        <TabsContent value="complications">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {assessmentItems.map((item, index) => {
-              const IconComponent = item.icon
-              return (
-                <Card key={index} className="bg-white shadow-lg">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center space-x-2">
-                      <IconComponent className="h-5 w-5" />
-                      <span>{item.name}</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Status */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium">Status:</span>
-                        <Badge className={getRiskColor(item.riskLevel)}>{item.riskLevel}</Badge>
-                      </div>
-                      <p className="text-sm">{item.status}</p>
-                      <p className="text-xs text-gray-500">Last assessed: {item.lastAssessed}</p>
-                    </div>
+	const addToReferrals = (consultation: string) => {
+		setPendingReferrals((prev) => [...prev, consultation]);
+	};
 
-                    {/* Trend Chart (if data available) */}
-                    {item.trendData.length > 0 && (
-                      <div>
-                        <h4 className="text-sm font-medium mb-2">Trend Analysis</h4>
-                        <ResponsiveContainer width="100%" height={100}>
-                          <LineChart data={item.trendData}>
-                            <XAxis dataKey="date" />
-                            <YAxis />
-                            <Tooltip />
-                            <Line
-                              type="monotone"
-                              dataKey={Object.keys(item.trendData[0]).find((key) => key !== "date")}
-                              stroke="#8884d8"
-                              strokeWidth={2}
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    )}
+	const toggleViewMode = (metric: keyof typeof viewMode) => {
+		setViewMode((prev) => ({
+			...prev,
+			[metric]: prev[metric] === "chart" ? "table" : "chart",
+		}));
+	};
 
-                    {/* Action Plan */}
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-medium">Action Plan:</h4>
+	const getScoreColor = (score: number, maxScore: number) => {
+		const percentage = (score / maxScore) * 100;
+		if (percentage <= 25) return "#22c55e";
+		if (percentage <= 50) return "#eab308";
+		return "#ef4444";
+	};
 
-                      {/* Investigations */}
-                      <div>
-                        <label className="text-xs text-gray-600">Investigations:</label>
-                        <Select>
-                          <SelectTrigger className="w-full h-8">
-                            <SelectValue placeholder="Select investigation" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {item.investigations.map((inv, idx) => (
-                              <SelectItem key={idx} value={inv}>
-                                {inv}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+	const addMentalHealthScore = () => {
+		if (newPhq9 && newGad7 && newStress) {
+			const newEntry = {
+				date: new Date().toLocaleDateString("en-US", {
+					month: "short",
+					year: "numeric",
+				}),
+				phq9: Number.parseInt(newPhq9),
+				gad7: Number.parseInt(newGad7),
+				stressLevel: Number.parseInt(newStress),
+			};
+			setMentalHealthData((prev) => [...prev, newEntry]);
+			setNewPhq9("");
+			setNewGad7("");
+			setNewStress("");
+		}
+	};
 
-                      {/* Consultations */}
-                      <div>
-                        <label className="text-xs text-gray-600">Consultations:</label>
-                        <Select>
-                          <SelectTrigger className="w-full h-8">
-                            <SelectValue placeholder="Select consultation" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {item.consultations.map((cons, idx) => (
-                              <SelectItem key={idx} value={cons}>
-                                {cons}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+	const renderMentalHealthView = () => {
+		const isChart = viewMode.mentalHealth === "chart";
 
-                      {/* Follow-up */}
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-600">Follow-up:</span>
-                        <span className="text-xs font-medium">{item.followUp}</span>
-                      </div>
-                    </div>
+		return (
+			<div>
+				<div className="flex items-center justify-between mb-4">
+					<h3 className="text-lg font-semibold">
+						Mental Health Trends
+					</h3>
+					<Toggle
+						pressed={!isChart}
+						onPressedChange={() => toggleViewMode("mentalHealth")}
+						aria-label="Toggle mental health view"
+					>
+						{isChart ? (
+							<Table className="h-4 w-4" />
+						) : (
+							<BarChart3 className="h-4 w-4" />
+						)}
+					</Toggle>
+				</div>
 
-                    {/* Action Buttons */}
-                    <div className="flex space-x-2">
-                      <Button size="sm" variant="outline" className="flex-1 bg-transparent">
-                        Order Tests
-                      </Button>
-                      <Button size="sm" variant="outline" className="flex-1 bg-transparent">
-                        Refer
-                      </Button>
-                    </div>
+				{isChart ? (
+					<>
+						<ResponsiveContainer
+							width="100%"
+							height={300}
+						>
+							<LineChart data={mentalHealthData}>
+								<CartesianGrid strokeDasharray="3 3" />
+								<XAxis dataKey="date" />
+								<YAxis />
+								<Tooltip
+									formatter={(value, name) => [
+										`${value} ${
+											name === "phq9"
+												? "(PHQ-9)"
+												: name === "gad7"
+												? "(GAD-7)"
+												: "(Stress)"
+										}`,
+										name === "phq9"
+											? "Depression Score"
+											: name === "gad7"
+											? "Anxiety Score"
+											: "Stress Level",
+									]}
+								/>
+								<ReferenceArea
+									y1={0}
+									y2={4}
+									fill="#22c55e"
+									fillOpacity={0.1}
+								/>
+								<ReferenceArea
+									y1={5}
+									y2={9}
+									fill="#eab308"
+									fillOpacity={0.1}
+								/>
+								<ReferenceArea
+									y1={10}
+									y2={27}
+									fill="#ef4444"
+									fillOpacity={0.1}
+								/>
+								<ReferenceLine
+									y={4}
+									stroke="#22c55e"
+									strokeDasharray="3 3"
+									label={{
+										value: "Normal: ≤4",
+										position: "insideTopLeft",
+									}}
+								/>
+								<ReferenceLine
+									y={9}
+									stroke="#eab308"
+									strokeDasharray="3 3"
+									label={{
+										value: "Mild: 5-9",
+										position: "insideTopLeft",
+									}}
+								/>
+								<Line
+									type="monotone"
+									dataKey="phq9"
+									stroke="#8884d8"
+									name="PHQ-9 Score"
+									dot={(props) => {
+										const { cx, cy, payload } = props;
+										const color = getScoreColor(
+											payload.phq9,
+											27
+										);
+										return (
+											<circle
+												key={payload.date}
+												cx={cx}
+												cy={cy}
+												r={4}
+												fill={color}
+												stroke={color}
+												strokeWidth={2}
+											/>
+										);
+									}}
+								/>
+								<Line
+									type="monotone"
+									dataKey="gad7"
+									stroke="#82ca9d"
+									name="GAD-7 Score"
+									dot={(props) => {
+										const { cx, cy, payload } = props;
+										const color = getScoreColor(
+											payload.gad7,
+											21
+										);
+										return (
+											<circle
+												key={payload.date}
+												cx={cx}
+												cy={cy}
+												r={4}
+												fill={color}
+												stroke={color}
+												strokeWidth={2}
+											/>
+										);
+									}}
+								/>
+								<Line
+									type="monotone"
+									dataKey="stressLevel"
+									stroke="#ffc658"
+									name="Stress Level"
+								/>
+							</LineChart>
+						</ResponsiveContainer>
+						<div className="mt-4 flex justify-center space-x-6 text-sm">
+							<div className="flex items-center space-x-2">
+								<div className="w-4 h-4 bg-green-200 rounded"></div>
+								<span>Normal (PHQ-9: ≤4, GAD-7: ≤4)</span>
+							</div>
+							<div className="flex items-center space-x-2">
+								<div className="w-4 h-4 bg-yellow-200 rounded"></div>
+								<span>Mild (PHQ-9: 5-9, GAD-7: 5-9)</span>
+							</div>
+							<div className="flex items-center space-x-2">
+								<div className="w-4 h-4 bg-red-200 rounded"></div>
+								<span>Severe (PHQ-9: ≥10, GAD-7: ≥10)</span>
+							</div>
+						</div>
+					</>
+				) : (
+					<div className="border rounded-lg overflow-hidden">
+						<table className="w-full text-sm">
+							<thead className="bg-gray-50">
+								<tr>
+									<th className="p-3 text-left">Date</th>
+									<th className="p-3 text-left">PHQ-9</th>
+									<th className="p-3 text-left">GAD-7</th>
+									<th className="p-3 text-left">Stress</th>
+									<th className="p-3 text-left">
+										Thresholds
+									</th>
+									<th className="p-3 text-left">Status</th>
+								</tr>
+							</thead>
+							<tbody>
+								{mentalHealthData.map((item, index) => (
+									<tr
+										key={index}
+										className="border-t"
+									>
+										<td className="p-3">{item.date}</td>
+										<td className="p-3">
+											<span
+												style={{
+													color: getScoreColor(
+														item.phq9,
+														27
+													),
+												}}
+											>
+												{item.phq9}
+											</span>
+										</td>
+										<td className="p-3">
+											<span
+												style={{
+													color: getScoreColor(
+														item.gad7,
+														21
+													),
+												}}
+											>
+												{item.gad7}
+											</span>
+										</td>
+										<td className="p-3">
+											{item.stressLevel}/10
+										</td>
+										<td className="p-3 text-xs text-gray-600">
+											PHQ-9: Normal ≤4, Mild 5-9, Severe
+											≥10
+											<br />
+											GAD-7: Normal ≤4, Mild 5-9, Severe
+											≥10
+										</td>
+										<td className="p-3">
+											<Badge
+												variant={
+													item.phq9 <= 4 &&
+													item.gad7 <= 4
+														? "default"
+														: "destructive"
+												}
+											>
+												{item.phq9 <= 4 &&
+												item.gad7 <= 4
+													? "Normal"
+													: "Elevated"}
+											</Badge>
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+				)}
+			</div>
+		);
+	};
 
-                    {/* Functional View Detailed Reports & Trends Button */}
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button size="sm" variant="ghost" className="w-full text-xs">
-                          View Detailed Reports & Trends
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-4xl">
-                        <DialogHeader>
-                          <DialogTitle>{item.name} - Detailed Assessment</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-6">
-                          {/* Trend Analysis */}
-                          {item.trendData.length > 0 && (
-                            <div>
-                              <h3 className="text-lg font-semibold mb-3">Trend Analysis</h3>
-                              <ResponsiveContainer width="100%" height={250}>
-                                <LineChart data={item.trendData}>
-                                  <CartesianGrid strokeDasharray="3 3" />
-                                  <XAxis dataKey="date" />
-                                  <YAxis />
-                                  <Tooltip />
-                                  <Line
-                                    type="monotone"
-                                    dataKey={Object.keys(item.trendData[0]).find((key) => key !== "date")}
-                                    stroke="#8884d8"
-                                    strokeWidth={3}
-                                  />
-                                </LineChart>
-                              </ResponsiveContainer>
-                            </div>
-                          )}
+	return (
+		<div className="p-8 bg-gradient-to-br from-gray-50 to-gray-100">
+			<h1 className="text-3xl font-bold text-navy-600 mb-6">
+				Comprehensive Assessment of Complications and Comorbidities
+			</h1>
 
-                          {/* Reports */}
-                          <div>
-                            <h3 className="text-lg font-semibold mb-3">Reports & Documents</h3>
-                            {item.reports.length > 0 ? (
-                              <div className="space-y-2">
-                                {item.reports.map((report, idx) => (
-                                  <div key={idx} className="flex items-center justify-between p-3 border rounded-lg">
-                                    <div>
-                                      <div className="font-medium">{report.type}</div>
-                                      <div className="text-sm text-gray-600">{report.date}</div>
-                                      <div className="text-sm">{report.finding}</div>
-                                    </div>
-                                    <Button size="sm" variant="outline">
-                                      View Report
-                                    </Button>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <p className="text-gray-500">No reports available</p>
-                            )}
-                          </div>
+			<Tabs
+				defaultValue="complications"
+				className="w-full"
+			>
+				<TabsList className="mb-4">
+					<TabsTrigger value="complications">
+						Complications Assessment
+					</TabsTrigger>
+					<TabsTrigger value="mental-health">
+						Mental Health Tracking
+					</TabsTrigger>
+					<TabsTrigger value="orders">
+						Order Tests/Investigations
+					</TabsTrigger>
+					<TabsTrigger value="referrals">Referrals</TabsTrigger>
+				</TabsList>
 
-                          {/* Add New Assessment */}
-                          <div>
-                            <h3 className="text-lg font-semibold mb-3">Add New Assessment</h3>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <Label>Assessment Date</Label>
-                                <Input type="date" />
-                              </div>
-                              <div>
-                                <Label>Status</Label>
-                                <Select>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select status" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="normal">Normal</SelectItem>
-                                    <SelectItem value="mild">Mild</SelectItem>
-                                    <SelectItem value="moderate">Moderate</SelectItem>
-                                    <SelectItem value="severe">Severe</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="col-span-2">
-                                <Label>Findings</Label>
-                                <Textarea placeholder="Enter assessment findings..." />
-                              </div>
-                            </div>
-                            <Button className="mt-4">Save Assessment</Button>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
+				<TabsContent value="complications">
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+						{assessmentItems.map((item: AssessmentItem, index) => {
+							const IconComponent = item.icon;
+							return (
+								<Card
+									key={index}
+									className="bg-white shadow-lg border-l-4 border-l-blue-500"
+								>
+									<CardHeader className="pb-3">
+										<CardTitle className="text-lg flex items-center justify-between">
+											<div className="flex items-center space-x-2">
+												<IconComponent className="h-5 w-5" />
+												<span>{item.name}</span>
+											</div>
+											<Badge
+												className={getStatusColor(
+													item.status
+												)}
+											>
+												{item.status}
+											</Badge>
+										</CardTitle>
+									</CardHeader>
+									<CardContent className="space-y-4">
+										{/* Actual Diagnosis */}
+										<div className="bg-gray-50 p-3 rounded-lg">
+											<Label className="text-sm font-medium text-gray-700">
+												Current Status:
+											</Label>
+											<p className="text-sm mt-1">
+												{item.actualDiagnosis}
+											</p>
+											<div className="flex justify-between text-xs text-gray-500 mt-2">
+												<span>
+													Last: {item.lastAssessed}
+												</span>
+												<span>
+													Next: {item.nextDue}
+												</span>
+											</div>
+										</div>
 
-          {/* Summary Card */}
-          <Card className="mt-6 bg-white shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-xl text-navy-600">Assessment Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-4 gap-4 text-center">
-                <div className="p-4 bg-red-50 rounded-lg">
-                  <div className="text-2xl font-bold text-red-600">1</div>
-                  <div className="text-sm text-red-600">High Risk</div>
-                </div>
-                <div className="p-4 bg-yellow-50 rounded-lg">
-                  <div className="text-2xl font-bold text-yellow-600">3</div>
-                  <div className="text-sm text-yellow-600">Moderate Risk</div>
-                </div>
-                <div className="p-4 bg-green-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">3</div>
-                  <div className="text-sm text-green-600">Low Risk</div>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <div className="text-2xl font-bold text-gray-600">4</div>
-                  <div className="text-sm text-gray-600">Not Assessed</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+										{/* Action Plan */}
+										<div>
+											<Label className="text-sm font-medium">
+												Action Plan
+											</Label>
+											<Select
+												value={
+													actionPlans[item.name] ||
+													item.selectedAction
+												}
+												onValueChange={(value) =>
+													handleActionChange(
+														item.name,
+														value
+													)
+												}
+											>
+												<SelectTrigger className="mt-2">
+													<SelectValue placeholder="Select action" />
+												</SelectTrigger>
+												<SelectContent>
+													{item.actionOptions.map(
+														(option) => (
+															<SelectItem
+																key={option}
+																value={option}
+															>
+																{option
+																	.charAt(0)
+																	.toUpperCase() +
+																	option.slice(
+																		1
+																	)}
+															</SelectItem>
+														)
+													)}
+												</SelectContent>
+											</Select>
+										</div>
 
-        <TabsContent value="mental-health">
-          <div className="space-y-6">
-            {/* Mental Health Tracking with Toggle */}
-            <Card className="bg-white shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-xl text-navy-600">Mental Health Monitoring</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {renderMentalHealthView()}
+										{/* Custom Follow-up */}
+										<div>
+											<Label className="text-sm font-medium">
+												Custom Follow-up
+											</Label>
+											<Input
+												value={
+													customFollowUp[item.name] ||
+													item.followUpCustom
+												}
+												onChange={(e) =>
+													handleFollowUpChange(
+														item.name,
+														e.target.value
+													)
+												}
+												placeholder="e.g., 6 months, based on findings"
+												className="mt-2"
+											/>
+										</div>
 
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="p-4 border rounded-lg">
-                    <h4 className="font-semibold mb-2">Latest PHQ-9 Score</h4>
-                    <div className="text-2xl font-bold text-blue-600 mb-2">3</div>
-                    <p className="text-sm text-gray-600">Minimal depression</p>
-                    <p className="text-xs text-gray-500">Last assessed: July 2024</p>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <h4 className="font-semibold mb-2">Latest GAD-7 Score</h4>
-                    <div className="text-2xl font-bold text-green-600 mb-2">3</div>
-                    <p className="text-sm text-gray-600">Minimal anxiety</p>
-                    <p className="text-xs text-gray-500">Last assessed: July 2024</p>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <h4 className="font-semibold mb-2">Stress Level</h4>
-                    <div className="text-2xl font-bold text-yellow-600 mb-2">3/10</div>
-                    <p className="text-sm text-gray-600">Low stress</p>
-                    <p className="text-xs text-gray-500">Self-reported</p>
-                  </div>
-                </div>
+										{/* Personal Notes */}
+										<div>
+											<Label className="text-sm font-medium">
+												Personal Notes
+											</Label>
+											<Textarea
+												value={
+													personalNotes[item.name] ||
+													""
+												}
+												onChange={(e) =>
+													handleNotesChange(
+														item.name,
+														e.target.value
+													)
+												}
+												placeholder="Add any personal notes, referral comments, or special instructions..."
+												className="mt-2"
+												rows={3}
+											/>
+										</div>
 
-                <div className="mt-4 flex justify-center space-x-6 text-sm">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-green-200 rounded"></div>
-                    <span>Normal Range</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-yellow-200 rounded"></div>
-                    <span>Mild Symptoms</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-red-200 rounded"></div>
-                    <span>Significant Symptoms</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+										{/* Drawing Feature for Neuropathy */}
+										{item.hasDrawing && (
+											<div>
+												<Label className="text-sm font-medium flex items-center space-x-2">
+													<Palette className="h-4 w-4" />
+													<span>
+														Neuropathy Assessment
+														Drawing
+													</span>
+												</Label>
+												<div className="mt-2 border rounded-lg p-4 bg-white">
+													<div className="flex justify-between items-center mb-2">
+														<span className="text-xs text-gray-600">
+															Draw affected areas
+															on the body diagram
+														</span>
+														<Button
+															size="sm"
+															variant="outline"
+															onClick={() =>
+																clearDrawing(
+																	item.name
+																)
+															}
+														>
+															Clear
+														</Button>
+													</div>
+													<canvas
+														ref={(el) =>
+															(canvasRefs.current[
+																item.name
+															] = el)
+														}
+														width={300}
+														height={400}
+														className="border rounded cursor-crosshair bg-gray-50"
+														style={{
+															backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 400'%3E%3Cpath d='M150 50 C130 50 120 70 120 90 L120 150 L100 180 L100 250 L120 280 L120 350 L140 380 L160 380 L180 350 L180 280 L200 250 L200 180 L180 150 L180 90 C180 70 170 50 150 50 Z' fill='none' stroke='%23ccc' strokeWidth='2'/%3E%3Ccircle cx='150' cy='70' r='20' fill='none' stroke='%23ccc' strokeWidth='2'/%3E%3C/svg%3E")`,
+															backgroundSize:
+																"contain",
+															backgroundRepeat:
+																"no-repeat",
+															backgroundPosition:
+																"center",
+														}}
+														onMouseDown={(e) =>
+															startDrawing(
+																e,
+																item.name
+															)
+														}
+														onMouseMove={(e) =>
+															draw(e, item.name)
+														}
+														onMouseUp={stopDrawing}
+														onMouseLeave={
+															stopDrawing
+														}
+													/>
+												</div>
+											</div>
+										)}
 
-            {/* Mental Health Assessment Form */}
-            <Card className="bg-white shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-xl text-navy-600 flex items-center justify-between">
-                  Mental Health Assessment - Data Input
-                  <Button size="sm" variant="outline">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Quick Add
-                  </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label htmlFor="assessment-date">Assessment Date</Label>
-                    <Input id="assessment-date" type="date" />
-                  </div>
-                  <div>
-                    <Label htmlFor="phq9">PHQ-9 Score (0-27)</Label>
-                    <Input
-                      id="phq9"
-                      type="number"
-                      min="0"
-                      max="27"
-                      placeholder="Enter PHQ-9 score"
-                      value={newPhq9}
-                      onChange={(e) => setNewPhq9(e.target.value)}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      0-4: Minimal, 5-9: Mild, 10-14: Moderate, 15-19: Moderately severe, 20-27: Severe
-                    </p>
-                  </div>
-                  <div>
-                    <Label htmlFor="gad7">GAD-7 Score (0-21)</Label>
-                    <Input
-                      id="gad7"
-                      type="number"
-                      min="0"
-                      max="21"
-                      placeholder="Enter GAD-7 score"
-                      value={newGad7}
-                      onChange={(e) => setNewGad7(e.target.value)}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      0-4: Minimal, 5-9: Mild, 10-14: Moderate, 15-21: Severe
-                    </p>
-                  </div>
-                  <div>
-                    <Label htmlFor="stress">Stress Level (1-10)</Label>
-                    <Input
-                      id="stress"
-                      type="number"
-                      min="1"
-                      max="10"
-                      placeholder="Enter stress level"
-                      value={newStress}
-                      onChange={(e) => setNewStress(e.target.value)}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">1-3: Low, 4-6: Moderate, 7-10: High</p>
-                  </div>
-                </div>
-                <Button className="mt-4" onClick={addMentalHealthScore}>
-                  Save Assessment
-                </Button>
-              </CardContent>
-            </Card>
+										{/* Quick Actions */}
+										<div className="flex space-x-2">
+											<Button
+												size="sm"
+												variant="outline"
+												className="flex-1 bg-transparent"
+												onClick={() => {
+													item.investigations.forEach(
+														(inv) =>
+															addToOrders(inv)
+													);
+												}}
+											>
+												<TestTube className="h-4 w-4 mr-1" />
+												Order Tests
+											</Button>
+											<Button
+												size="sm"
+												variant="outline"
+												className="flex-1 bg-transparent"
+												onClick={() => {
+													item.consultations.forEach(
+														(cons) =>
+															addToReferrals(cons)
+													);
+												}}
+											>
+												<UserCheck className="h-4 w-4 mr-1" />
+												Refer
+											</Button>
+										</div>
 
-            {/* Sleep Assessment */}
-            <Card className="bg-white shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-xl text-navy-600">Sleep Assessment</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="p-4 border rounded-lg">
-                    <h4 className="font-semibold mb-2">Sleep Quality</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="sleep-hours">Hours of Sleep</Label>
-                        <Input id="sleep-hours" type="number" placeholder="e.g., 6" />
-                      </div>
-                      <div>
-                        <Label htmlFor="sleep-quality">Sleep Quality (1-10)</Label>
-                        <Input id="sleep-quality" type="number" min="1" max="10" placeholder="Rate quality" />
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <Label>Sleep Issues:</Label>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        <Badge variant="outline">Disturbed sleep patterns</Badge>
-                        <Badge variant="outline">Occasional alprazolam use</Badge>
-                        <Badge variant="outline">Occasional zolpidem use</Badge>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <Button className="mt-4">Update Sleep Assessment</Button>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
-  )
+										{/* Detailed View Dialog */}
+										<Dialog>
+											<DialogTrigger asChild>
+												<Button
+													size="sm"
+													variant="ghost"
+													className="w-full text-xs mt-2"
+												>
+													View Detailed Reports &
+													Trends
+												</Button>
+											</DialogTrigger>
+											<DialogContent className="max-w-4xl">
+												<DialogHeader>
+													<DialogTitle>
+														{item.name} - Detailed
+														Assessment
+													</DialogTitle>
+												</DialogHeader>
+												<div className="space-y-6">
+													{/* Trend Analysis - Only for continuous data */}
+													{item.hasContinuousData &&
+														item.trendData &&
+														item.trendData.length >
+															0 && (
+															<div>
+																<h3 className="text-lg font-semibold mb-3">
+																	Trend
+																	Analysis
+																</h3>
+																<ResponsiveContainer
+																	width="100%"
+																	height={250}
+																>
+																	<LineChart
+																		data={
+																			item.trendData
+																		}
+																	>
+																		<CartesianGrid strokeDasharray="3 3" />
+																		<XAxis dataKey="date" />
+																		<YAxis />
+																		<Tooltip />
+																		<Line
+																			type="monotone"
+																			dataKey={Object.keys(
+																				item
+																					.trendData[0]
+																			).find(
+																				(
+																					key
+																				) =>
+																					key !==
+																					"date"
+																			)}
+																			stroke="#8884d8"
+																			strokeWidth={
+																				3
+																			}
+																		/>
+																	</LineChart>
+																</ResponsiveContainer>
+															</div>
+														)}
+
+													{/* Reports */}
+													<div>
+														<h3 className="text-lg font-semibold mb-3">
+															Reports & Documents
+														</h3>
+														{item.reports.length >
+														0 ? (
+															<div className="space-y-2">
+																{item.reports.map(
+																	(
+																		report,
+																		idx
+																	) => (
+																		<div
+																			key={
+																				idx
+																			}
+																			className="flex items-center justify-between p-3 border rounded-lg"
+																		>
+																			<div>
+																				<div className="font-medium">
+																					{
+																						report.type
+																					}
+																				</div>
+																				<div className="text-sm text-gray-600">
+																					{
+																						report.date
+																					}
+																				</div>
+																				<div className="text-sm">
+																					{
+																						report.finding
+																					}
+																				</div>
+																			</div>
+																			<Button
+																				size="sm"
+																				variant="outline"
+																			>
+																				View
+																				Report
+																			</Button>
+																		</div>
+																	)
+																)}
+															</div>
+														) : (
+															<p className="text-gray-500">
+																No reports
+																available
+															</p>
+														)}
+													</div>
+
+													{/* Add New Assessment */}
+													<div>
+														<h3 className="text-lg font-semibold mb-3">
+															Add New Assessment
+														</h3>
+														<div className="grid grid-cols-2 gap-4">
+															<div>
+																<Label>
+																	Assessment
+																	Date
+																</Label>
+																<Input type="date" />
+															</div>
+															<div>
+																<Label>
+																	Status
+																</Label>
+																<Select>
+																	<SelectTrigger>
+																		<SelectValue placeholder="Select status" />
+																	</SelectTrigger>
+																	<SelectContent>
+																		<SelectItem value="normal">
+																			Normal
+																		</SelectItem>
+																		<SelectItem value="mild">
+																			Mild
+																		</SelectItem>
+																		<SelectItem value="moderate">
+																			Moderate
+																		</SelectItem>
+																		<SelectItem value="severe">
+																			Severe
+																		</SelectItem>
+																	</SelectContent>
+																</Select>
+															</div>
+															<div className="col-span-2">
+																<Label>
+																	Findings
+																</Label>
+																<Textarea placeholder="Enter assessment findings..." />
+															</div>
+														</div>
+														<Button className="mt-4">
+															<Save className="h-4 w-4 mr-2" />
+															Save Assessment
+														</Button>
+													</div>
+												</div>
+											</DialogContent>
+										</Dialog>
+									</CardContent>
+								</Card>
+							);
+						})}
+					</div>
+
+					{/* Summary Card */}
+					<Card className="mt-6 bg-white shadow-lg">
+						<CardHeader>
+							<CardTitle className="text-xl text-navy-600">
+								Assessment Summary
+							</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="grid grid-cols-4 gap-4 text-center">
+								<div className="p-4 bg-red-50 rounded-lg border border-red-200">
+									<div className="text-2xl font-bold text-red-600">
+										0
+									</div>
+									<div className="text-sm text-red-600">
+										High Risk
+									</div>
+								</div>
+								<div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+									<div className="text-2xl font-bold text-orange-600">
+										2
+									</div>
+									<div className="text-sm text-orange-600">
+										Moderate Risk
+									</div>
+								</div>
+								<div className="p-4 bg-green-50 rounded-lg border border-green-200">
+									<div className="text-2xl font-bold text-green-600">
+										3
+									</div>
+									<div className="text-sm text-green-600">
+										Low Risk
+									</div>
+								</div>
+								<div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+									<div className="text-2xl font-bold text-gray-600">
+										3
+									</div>
+									<div className="text-sm text-gray-600">
+										Pending Assessment
+									</div>
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+				</TabsContent>
+
+				<TabsContent value="mental-health">
+					<div className="space-y-6">
+						{/* Mental Health Tracking */}
+						<Card className="bg-white shadow-lg">
+							<CardHeader>
+								<CardTitle className="text-xl text-navy-600">
+									Mental Health Monitoring
+								</CardTitle>
+							</CardHeader>
+							<CardContent>
+								{renderMentalHealthView()}
+
+								<div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+									<div className="p-4 border rounded-lg">
+										<h4 className="font-semibold mb-2">
+											Latest PHQ-9 Score
+										</h4>
+										<div className="text-2xl font-bold text-blue-600 mb-2">
+											3
+										</div>
+										<p className="text-sm text-gray-600">
+											Minimal depression
+										</p>
+										<p className="text-xs text-gray-500">
+											Last assessed: July 2024
+										</p>
+									</div>
+									<div className="p-4 border rounded-lg">
+										<h4 className="font-semibold mb-2">
+											Latest GAD-7 Score
+										</h4>
+										<div className="text-2xl font-bold text-green-600 mb-2">
+											3
+										</div>
+										<p className="text-sm text-gray-600">
+											Minimal anxiety
+										</p>
+										<p className="text-xs text-gray-500">
+											Last assessed: July 2024
+										</p>
+									</div>
+									<div className="p-4 border rounded-lg">
+										<h4 className="font-semibold mb-2">
+											Stress Level
+										</h4>
+										<div className="text-2xl font-bold text-yellow-600 mb-2">
+											3/10
+										</div>
+										<p className="text-sm text-gray-600">
+											Low stress
+										</p>
+										<p className="text-xs text-gray-500">
+											Self-reported
+										</p>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+
+						{/* Mental Health Assessment Form */}
+						<Card className="bg-white shadow-lg">
+							<CardHeader>
+								<CardTitle className="text-xl text-navy-600 flex items-center justify-between">
+									Mental Health Assessment - Data Input
+									<Button
+										size="sm"
+										variant="outline"
+									>
+										<Plus className="h-4 w-4 mr-2" />
+										Quick Add
+									</Button>
+								</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+									<div>
+										<Label htmlFor="assessment-date">
+											Assessment Date
+										</Label>
+										<Input
+											id="assessment-date"
+											type="date"
+										/>
+									</div>
+									<div>
+										<Label htmlFor="phq9">
+											PHQ-9 Score (0-27)
+										</Label>
+										<Input
+											id="phq9"
+											type="number"
+											min="0"
+											max="27"
+											placeholder="Enter PHQ-9 score"
+											value={newPhq9}
+											onChange={(e) =>
+												setNewPhq9(e.target.value)
+											}
+										/>
+										<p className="text-xs text-gray-500 mt-1">
+											0-4: Minimal, 5-9: Mild, 10-14:
+											Moderate, 15-19: Moderately severe,
+											20-27: Severe
+										</p>
+									</div>
+									<div>
+										<Label htmlFor="gad7">
+											GAD-7 Score (0-21)
+										</Label>
+										<Input
+											id="gad7"
+											type="number"
+											min="0"
+											max="21"
+											placeholder="Enter GAD-7 score"
+											value={newGad7}
+											onChange={(e) =>
+												setNewGad7(e.target.value)
+											}
+										/>
+										<p className="text-xs text-gray-500 mt-1">
+											0-4: Minimal, 5-9: Mild, 10-14:
+											Moderate, 15-21: Severe
+										</p>
+									</div>
+									<div>
+										<Label htmlFor="stress">
+											Stress Level (1-10)
+										</Label>
+										<Input
+											id="stress"
+											type="number"
+											min="1"
+											max="10"
+											placeholder="Enter stress level"
+											value={newStress}
+											onChange={(e) =>
+												setNewStress(e.target.value)
+											}
+										/>
+										<p className="text-xs text-gray-500 mt-1">
+											1-3: Low, 4-6: Moderate, 7-10: High
+										</p>
+									</div>
+								</div>
+								<Button
+									className="mt-4"
+									onClick={addMentalHealthScore}
+								>
+									Save Assessment
+								</Button>
+							</CardContent>
+						</Card>
+					</div>
+				</TabsContent>
+
+				<TabsContent value="orders">
+					<Card className="bg-white shadow-lg">
+						<CardHeader>
+							<CardTitle className="text-xl text-navy-600 flex items-center">
+								<TestTube className="h-6 w-6 mr-2" />
+								Order Tests & Investigations
+							</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="space-y-4">
+								<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+									{/* Lab Tests */}
+									<div className="border rounded-lg p-4">
+										<h3 className="font-semibold mb-3">
+											Laboratory Tests
+										</h3>
+										<div className="space-y-2">
+											{[
+												"HbA1c",
+												"Lipid Profile",
+												"Liver Function Tests",
+												"Kidney Function Tests",
+												"Thyroid Function",
+											].map((test) => (
+												<div
+													key={test}
+													className="flex items-center justify-between"
+												>
+													<span className="text-sm">
+														{test}
+													</span>
+													<Button
+														size="sm"
+														variant="outline"
+														onClick={() =>
+															addToOrders(test)
+														}
+													>
+														Order
+													</Button>
+												</div>
+											))}
+										</div>
+									</div>
+
+									{/* Imaging */}
+									<div className="border rounded-lg p-4">
+										<h3 className="font-semibold mb-3">
+											Imaging Studies
+										</h3>
+										<div className="space-y-2">
+											{[
+												"ECG",
+												"ECHO",
+												"Chest X-ray",
+												"Ultrasound Abdomen",
+												"CT Scan",
+											].map((imaging) => (
+												<div
+													key={imaging}
+													className="flex items-center justify-between"
+												>
+													<span className="text-sm">
+														{imaging}
+													</span>
+													<Button
+														size="sm"
+														variant="outline"
+														onClick={() =>
+															addToOrders(imaging)
+														}
+													>
+														Order
+													</Button>
+												</div>
+											))}
+										</div>
+									</div>
+
+									{/* Specialized Tests */}
+									<div className="border rounded-lg p-4">
+										<h3 className="font-semibold mb-3">
+											Specialized Tests
+										</h3>
+										<div className="space-y-2">
+											{[
+												"Fundus Photography",
+												"NCV Study",
+												"ABI",
+												"FibroScan",
+												"Stress Test",
+											].map((test) => (
+												<div
+													key={test}
+													className="flex items-center justify-between"
+												>
+													<span className="text-sm">
+														{test}
+													</span>
+													<Button
+														size="sm"
+														variant="outline"
+														onClick={() =>
+															addToOrders(test)
+														}
+													>
+														Order
+													</Button>
+												</div>
+											))}
+										</div>
+									</div>
+								</div>
+
+								{/* Pending Orders */}
+								{pendingOrders.length > 0 && (
+									<div className="mt-6">
+										<h3 className="font-semibold mb-3">
+											Pending Orders (
+											{pendingOrders.length})
+										</h3>
+										<div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+											<div className="flex flex-wrap gap-2">
+												{pendingOrders.map(
+													(order, index) => (
+														<Badge
+															key={index}
+															variant="secondary"
+															className="bg-blue-100 text-blue-800"
+														>
+															{order}
+														</Badge>
+													)
+												)}
+											</div>
+											<Button
+												className="mt-3"
+												onClick={() =>
+													setPendingOrders([])
+												}
+											>
+												Submit All Orders
+											</Button>
+										</div>
+									</div>
+								)}
+							</div>
+						</CardContent>
+					</Card>
+				</TabsContent>
+
+				<TabsContent value="referrals">
+					<Card className="bg-white shadow-lg">
+						<CardHeader>
+							<CardTitle className="text-xl text-navy-600 flex items-center">
+								<Users className="h-6 w-6 mr-2" />
+								Referrals & Consultations
+							</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="space-y-4">
+								<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+									{/* Medical Specialties */}
+									<div className="border rounded-lg p-4">
+										<h3 className="font-semibold mb-3">
+											Medical Specialties
+										</h3>
+										<div className="space-y-2">
+											{[
+												"Cardiology",
+												"Endocrinology",
+												"Nephrology",
+												"Neurology",
+												"Hepatology",
+											].map((specialty) => (
+												<div
+													key={specialty}
+													className="flex items-center justify-between"
+												>
+													<span className="text-sm">
+														{specialty}
+													</span>
+													<Button
+														size="sm"
+														variant="outline"
+														onClick={() =>
+															addToReferrals(
+																specialty
+															)
+														}
+													>
+														Refer
+													</Button>
+												</div>
+											))}
+										</div>
+									</div>
+
+									{/* Surgical Specialties */}
+									<div className="border rounded-lg p-4">
+										<h3 className="font-semibold mb-3">
+											Surgical Specialties
+										</h3>
+										<div className="space-y-2">
+											{[
+												"Vascular Surgery",
+												"Plastic Surgery",
+												"General Surgery",
+												"Orthopedics",
+											].map((specialty) => (
+												<div
+													key={specialty}
+													className="flex items-center justify-between"
+												>
+													<span className="text-sm">
+														{specialty}
+													</span>
+													<Button
+														size="sm"
+														variant="outline"
+														onClick={() =>
+															addToReferrals(
+																specialty
+															)
+														}
+													>
+														Refer
+													</Button>
+												</div>
+											))}
+										</div>
+									</div>
+
+									{/* Allied Health */}
+									<div className="border rounded-lg p-4">
+										<h3 className="font-semibold mb-3">
+											Allied Health
+										</h3>
+										<div className="space-y-2">
+											{[
+												"Ophthalmology",
+												"Podiatry",
+												"Dietitian",
+												"Physiotherapy",
+												"Psychology",
+											].map((service) => (
+												<div
+													key={service}
+													className="flex items-center justify-between"
+												>
+													<span className="text-sm">
+														{service}
+													</span>
+													<Button
+														size="sm"
+														variant="outline"
+														onClick={() =>
+															addToReferrals(
+																service
+															)
+														}
+													>
+														Refer
+													</Button>
+												</div>
+											))}
+										</div>
+									</div>
+								</div>
+
+								{/* Pending Referrals */}
+								{pendingReferrals.length > 0 && (
+									<div className="mt-6">
+										<h3 className="font-semibold mb-3">
+											Pending Referrals (
+											{pendingReferrals.length})
+										</h3>
+										<div className="bg-green-50 border border-green-200 rounded-lg p-4">
+											<div className="flex flex-wrap gap-2">
+												{pendingReferrals.map(
+													(referral, index) => (
+														<Badge
+															key={index}
+															variant="secondary"
+															className="bg-green-100 text-green-800"
+														>
+															{referral}
+														</Badge>
+													)
+												)}
+											</div>
+											<Button
+												className="mt-3"
+												onClick={() =>
+													setPendingReferrals([])
+												}
+											>
+												Submit All Referrals
+											</Button>
+										</div>
+									</div>
+								)}
+
+								{/* Referral Template */}
+								<div className="mt-6">
+									<h3 className="font-semibold mb-3">
+										Referral Letter Template
+									</h3>
+									<div className="border rounded-lg p-4">
+										<Textarea
+											placeholder="Dear Colleague,
+
+I am referring this patient for your expert opinion and management...
+
+Patient Details:
+- Name: [Patient Name]
+- Age: [Age]
+- Diagnosis: [Primary Diagnosis]
+- Current Medications: [List]
+- Specific Concern: [Reason for referral]
+
+Thank you for your time and expertise.
+
+Best regards,
+[Your Name]"
+											rows={10}
+											className="w-full"
+										/>
+										<Button className="mt-3">
+											Generate Referral Letter
+										</Button>
+									</div>
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+				</TabsContent>
+			</Tabs>
+		</div>
+	);
 }

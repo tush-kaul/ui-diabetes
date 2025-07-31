@@ -8,7 +8,8 @@ import ComprehensiveAssessmentFunctional from "./comprehensive-assessment-functi
 import LifestyleEnhanced from "./lifestyle-enhanced";
 import AdherenceCommunication from "./adherence-communication";
 import AdvicePrintableFixed from "./advice-printable-fixed";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
 	Activity,
 	ClipboardList,
@@ -30,7 +31,20 @@ import {
 } from "./components/ui/tooltip";
 
 export default function PatientDashboardMain() {
-	const [activeTab, setActiveTab] = useState("overview");
+	const router = useRouter();
+	const searchParams = useSearchParams();
+	
+	const activeTab = searchParams.get("tab") || "overview";
+	const subTab = searchParams.get("subtab") || undefined;
+
+	const handleNavigation = (tabId: string, subTabId?: string) => {
+		const params = new URLSearchParams();
+		params.set("tab", tabId);
+		if (subTabId) {
+			params.set("subtab", subTabId);
+		}
+		router.push(`?${params.toString()}`);
+	};
 
 	const tabs = [
 		{
@@ -95,7 +109,7 @@ export default function PatientDashboardMain() {
 	const renderTabContent = () => {
 		switch (activeTab) {
 			case "overview":
-				return <PatientOverviewEnhanced />;
+				return <PatientOverviewEnhanced onNavigate={handleNavigation} />;
 			case "medications":
 				return <MedicationsEnhanced />;
 			case "lab-monitoring":
@@ -105,11 +119,11 @@ export default function PatientDashboardMain() {
 			case "lifestyle":
 				return <LifestyleEnhanced />;
 			case "communication":
-				return <AdherenceCommunication />;
+				return <AdherenceCommunication initialSubTab={subTab} />;
 			case "advice-sheet":
 				return <AdvicePrintableFixed />;
 			default:
-				return <PatientOverviewEnhanced />;
+				return <PatientOverviewEnhanced onNavigate={handleNavigation} />;
 		}
 	};
 
@@ -180,7 +194,7 @@ export default function PatientDashboardMain() {
 										<TooltipTrigger asChild>
 											<button
 												onClick={() =>
-													setActiveTab(tab.id)
+													handleNavigation(tab.id)
 												}
 												className={`
                           relative flex items-center space-x-1 sm:space-x-3 px-1 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap
@@ -195,7 +209,7 @@ export default function PatientDashboardMain() {
 													{tab.label}
 												</span>
 												<span className="whitespace-nowrap xs:hidden text-xs">
-													{tab.label.split(' ')[0]}
+													{tab.label.split(" ")[0]}
 												</span>
 												<Badge
 													className={`

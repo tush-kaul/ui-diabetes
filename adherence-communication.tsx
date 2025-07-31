@@ -36,7 +36,13 @@ import {
 	ReferenceArea,
 } from "recharts";
 
-export default function AdherenceCommunication() {
+interface AdherenceCommunicationProps {
+	initialSubTab?: string;
+}
+
+export default function AdherenceCommunication({
+	initialSubTab,
+}: AdherenceCommunicationProps) {
 	const [viewMode, setViewMode] = useState({
 		adherence: "chart",
 		goals: "chart",
@@ -183,7 +189,8 @@ export default function AdherenceCommunication() {
 					<Toggle
 						pressed={!isChart}
 						onPressedChange={() => toggleViewMode("adherence")}
-						aria-label="Toggle adherence view">
+						aria-label="Toggle adherence view"
+					>
 						{isChart ? (
 							<Table className="h-4 w-4" />
 						) : (
@@ -197,7 +204,8 @@ export default function AdherenceCommunication() {
 						<ResponsiveContainer
 							width="100%"
 							height={250}
-							className="mt-4 -ml-4 sm:ml-0">
+							className="mt-4 -ml-4 sm:ml-0"
+						>
 							<LineChart
 								data={adherenceData}
 								margin={{
@@ -205,7 +213,8 @@ export default function AdherenceCommunication() {
 									right: 5,
 									left: -20,
 									bottom: 5,
-								}}>
+								}}
+							>
 								<CartesianGrid strokeDasharray="3 3" />
 								<XAxis dataKey="date" />
 								<YAxis domain={[70, 100]} />
@@ -350,7 +359,8 @@ export default function AdherenceCommunication() {
 								{adherenceData.map((item, index) => (
 									<tr
 										key={index}
-										className="border-t">
+										className="border-t"
+									>
 										<td className="p-3">{item.date}</td>
 										<td className="p-3 font-semibold">
 											<span
@@ -361,7 +371,8 @@ export default function AdherenceCommunication() {
 															: item.overall >= 80
 															? "#eab308"
 															: "#ef4444",
-												}}>
+												}}
+											>
 												{item.overall}%
 											</span>
 										</td>
@@ -382,7 +393,8 @@ export default function AdherenceCommunication() {
 														: item.overall >= 80
 														? "secondary"
 														: "destructive"
-												}>
+												}
+											>
 												{item.overall >= 90
 													? "Excellent"
 													: item.overall >= 80
@@ -412,7 +424,8 @@ export default function AdherenceCommunication() {
 					<Toggle
 						pressed={!isChart}
 						onPressedChange={() => toggleViewMode("goals")}
-						aria-label="Toggle goals view">
+						aria-label="Toggle goals view"
+					>
 						{isChart ? (
 							<Table className="h-4 w-4" />
 						) : (
@@ -425,7 +438,8 @@ export default function AdherenceCommunication() {
 					<>
 						<ResponsiveContainer
 							width="100%"
-							height={300}>
+							height={300}
+						>
 							<LineChart data={goalData}>
 								<CartesianGrid strokeDasharray="3 3" />
 								<XAxis dataKey="date" />
@@ -551,7 +565,8 @@ export default function AdherenceCommunication() {
 									return (
 										<tr
 											key={index}
-											className="border-t">
+											className="border-t"
+										>
 											<td className="p-3">{item.date}</td>
 											<td className="p-3">
 												{item.hba1c}%
@@ -569,7 +584,8 @@ export default function AdherenceCommunication() {
 															: average >= 85
 															? "secondary"
 															: "destructive"
-													}>
+													}
+												>
 													{average >= 95
 														? "Target Achieved"
 														: average >= 85
@@ -595,27 +611,32 @@ export default function AdherenceCommunication() {
 			</h1>
 
 			<Tabs
-				defaultValue="adherence"
-				className="w-full space-y-2 sm:space-y-0">
+				defaultValue={initialSubTab || "adherence"}
+				className="w-full space-y-2 sm:space-y-0"
+			>
 				<TabsList className="mb-4 flex flex-wrap gap-2">
 					<TabsTrigger
 						value="adherence"
-						className="text-xs sm:text-sm">
+						className="text-xs sm:text-sm"
+					>
 						Adherence
 					</TabsTrigger>
 					<TabsTrigger
 						value="goals"
-						className="text-xs sm:text-sm">
+						className="text-xs sm:text-sm"
+					>
 						Goals
 					</TabsTrigger>
 					<TabsTrigger
 						value="communication"
-						className="text-xs sm:text-sm">
+						className="text-xs sm:text-sm"
+					>
 						Communication
 					</TabsTrigger>
 					<TabsTrigger
 						value="recommendations"
-						className="text-xs sm:text-sm">
+						className="text-xs sm:text-sm"
+					>
 						AI Insights
 					</TabsTrigger>
 				</TabsList>
@@ -644,7 +665,8 @@ export default function AdherenceCommunication() {
 									{targetGoals.map((goal, index) => (
 										<div
 											key={index}
-											className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 border rounded-lg">
+											className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 border rounded-lg"
+										>
 											<div className="flex-1 w-full">
 												<div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2">
 													<span className="font-medium text-sm sm:text-base">
@@ -660,7 +682,8 @@ export default function AdherenceCommunication() {
 																	  "medium"
 																	? "secondary"
 																	: "default"
-															}>
+															}
+														>
 															{goal.priority.toUpperCase()}
 														</Badge>
 														<span
@@ -668,7 +691,8 @@ export default function AdherenceCommunication() {
 																goal.achieved
 																	? "text-green-600"
 																	: "text-red-600"
-															}>
+															}
+														>
 															{goal.achieved
 																? "Achieved"
 																: "Not Achieved"}
@@ -731,7 +755,8 @@ export default function AdherenceCommunication() {
 									</div>
 									<Button
 										size="sm"
-										className="mt-3 w-full">
+										className="mt-3 w-full"
+									>
 										<MessageSquare className="h-4 w-4 mr-2" />
 										Send Message
 									</Button>
@@ -754,7 +779,8 @@ export default function AdherenceCommunication() {
 									</div>
 									<Button
 										size="sm"
-										className="mt-3 w-full">
+										className="mt-3 w-full"
+									>
 										<Phone className="h-4 w-4 mr-2" />
 										Schedule Call
 									</Button>
@@ -777,7 +803,8 @@ export default function AdherenceCommunication() {
 									</div>
 									<Button
 										size="sm"
-										className="mt-3 w-full">
+										className="mt-3 w-full"
+									>
 										<Calendar className="h-4 w-4 mr-2" />
 										Book Appointment
 									</Button>
@@ -841,7 +868,8 @@ export default function AdherenceCommunication() {
 										</Button>
 										<Button
 											variant="outline"
-											className="flex-1 bg-transparent">
+											className="flex-1 bg-transparent"
+										>
 											<MessageSquare className="h-4 w-4 mr-2" />
 											Send SMS
 										</Button>
@@ -883,17 +911,20 @@ export default function AdherenceCommunication() {
 										<div className="flex space-x-2">
 											<Button
 												size="sm"
-												variant="outline">
+												variant="outline"
+											>
 												Accept
 											</Button>
 											<Button
 												size="sm"
-												variant="outline">
+												variant="outline"
+											>
 												Modify
 											</Button>
 											<Button
 												size="sm"
-												variant="outline">
+												variant="outline"
+											>
 												Reject
 											</Button>
 										</div>
@@ -920,17 +951,20 @@ export default function AdherenceCommunication() {
 										<div className="flex space-x-2">
 											<Button
 												size="sm"
-												variant="outline">
+												variant="outline"
+											>
 												Accept
 											</Button>
 											<Button
 												size="sm"
-												variant="outline">
+												variant="outline"
+											>
 												Modify
 											</Button>
 											<Button
 												size="sm"
-												variant="outline">
+												variant="outline"
+											>
 												Reject
 											</Button>
 										</div>
@@ -956,17 +990,20 @@ export default function AdherenceCommunication() {
 										<div className="flex space-x-2">
 											<Button
 												size="sm"
-												variant="outline">
+												variant="outline"
+											>
 												Accept
 											</Button>
 											<Button
 												size="sm"
-												variant="outline">
+												variant="outline"
+											>
 												Modify
 											</Button>
 											<Button
 												size="sm"
-												variant="outline">
+												variant="outline"
+											>
 												Reject
 											</Button>
 										</div>
@@ -993,18 +1030,67 @@ export default function AdherenceCommunication() {
 									].map((education, index) => (
 										<div
 											key={index}
-											className="flex items-center justify-between p-3 border rounded-lg">
+											className="flex items-center justify-between p-3 border rounded-lg"
+										>
 											<span className="text-sm">
 												{education}
 											</span>
 											<Button
 												size="sm"
-												variant="outline">
+												variant="outline"
+											>
 												<MessageSquare className="h-4 w-4 mr-2" />
 												Send to WhatsApp
 											</Button>
 										</div>
 									))}
+								</div>
+							</CardContent>
+						</Card>
+
+						{/* Smart Assist Section - New */}
+						<Card className="bg-white shadow-lg">
+							<CardHeader>
+								<CardTitle className="text-xl text-navy-600">
+									Smart Assist: Doctor Companion
+								</CardTitle>
+							</CardHeader>
+							<CardContent className="space-y-4">
+								<p className="text-sm text-gray-700 italic">
+									What else would you like me to do?
+								</p>
+
+								<div className="border p-4 rounded-lg bg-gray-50 space-y-2">
+									<p className="font-medium text-gray-800">
+										Referral Draft
+									</p>
+									<p className="text-sm text-gray-600">
+										Ophthalmology referral ready for patient
+										with moderate NPDR. Includes last exam,
+										current vision, HbA1c, BP.
+									</p>
+									<Button
+										size="sm"
+										className="mt-1"
+									>
+										Generate Referral Note
+									</Button>
+								</div>
+
+								<div className="border p-4 rounded-lg bg-gray-50 space-y-2">
+									<p className="font-medium text-gray-800">
+										Diet Plan
+									</p>
+									<p className="text-sm text-gray-600">
+										Personalized low-GI diet chart based on
+										current medications, weight, and HbA1c.
+									</p>
+									<Button
+										size="sm"
+										className="mt-1"
+									>
+										Generate Diet Chart
+									</Button>
 								</div>
 							</CardContent>
 						</Card>

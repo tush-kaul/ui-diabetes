@@ -16,11 +16,17 @@ export default function AdvicePrintableFixed() {
 						Patient Advice Sheet
 					</h1>
 					<div className="flex flex-col xs:flex-row space-y-2 xs:space-y-0 xs:space-x-2">
-						<Button onClick={() => window.print()} className="w-full xs:w-auto">
+						<Button
+							onClick={() => window.print()}
+							className="w-full xs:w-auto"
+						>
 							<Printer className="h-4 w-4 mr-2" />
 							Print
 						</Button>
-						<Button variant="outline" className="w-full xs:w-auto">
+						<Button
+							variant="outline"
+							className="w-full xs:w-auto"
+						>
 							<Download className="h-4 w-4 mr-2" />
 							Download PDF
 						</Button>
@@ -71,7 +77,9 @@ export default function AdvicePrintableFixed() {
 					{/* Diagnosis */}
 					<Card className="mb-4 page-break-inside-avoid">
 						<CardHeader>
-							<CardTitle className="text-lg sm:text-xl">Diagnosis</CardTitle>
+							<CardTitle className="text-lg sm:text-xl">
+								Diagnosis
+							</CardTitle>
 						</CardHeader>
 						<CardContent>
 							<ul className="space-y-1">
@@ -176,80 +184,84 @@ export default function AdvicePrintableFixed() {
 
 					{/* Current Medications - Page break before if needed */}
 					<div className="page-break-before">
-						<Card className="mb-4 page-break-inside-avoid">
+						<Card className="mb-6">
 							<CardHeader>
-								<CardTitle className="text-lg sm:text-xl">
+								<CardTitle className="text-xl">
 									Current Medications
 								</CardTitle>
 							</CardHeader>
 							<CardContent>
-								<div className="space-y-3 text-sm">
-									<div>
-										<p className="font-semibold">
-											For Diabetes:
-										</p>
-										<ol className="ml-4 space-y-1">
-											<li>
-												1. Insulin Novomix Penfill:
-												20-22 units before breakfast,
-												16-18 units before dinner
-											</li>
-											<li>
-												2. Metformin + Glimepiride
-												(AMARYL M2): 1 tablet twice
-												daily before meals
-											</li>
-											<li>
-												3. Sitagliptin + Dapagliflozin
-												(DAPLA-S): 1 tablet once daily
-												after breakfast
-											</li>
-											<li>
-												4. Voglibose (VOGS 0.2): 1
-												tablet with each meal
-											</li>
-										</ol>
-									</div>
+								<div className="space-y-2 text-sm">
+									<p>
+										<strong>For Diabetes:</strong>
+									</p>
+									<ul className="ml-4 space-y-1">
+										<li>
+											1. Insulin Novomix Penfill:
+											<span className="ml-1">
+												20-22 units{" "}
+												<span className="text-blue-600 font-bold">
+													&#8593;
+												</span>{" "}
+												before breakfast, 16-18 units{" "}
+												<span className="text-blue-600 font-bold">
+													&#8593;
+												</span>{" "}
+												before dinner
+											</span>
+										</li>
+										<li>
+											2. Metformin + Glimepiride (AMARYL
+											M2): 1 tablet twice daily before
+											meals
+										</li>
+										<li>
+											3. Sitagliptin + Dapagliflozin
+											(DAPLA-S): 1 tablet once daily after
+											breakfast
+										</li>
+										<li className="p-2 border rounded bg-green-50 border-green-400">
+											4. Voglibose (VOGS 0.2): 1 tablet
+											with each meal
+											<span className="text-green-700 font-semibold ml-2">
+												(New)
+											</span>
+										</li>
+									</ul>
 
-									<div>
-										<p className="font-semibold">
+									<p className="mt-3">
+										<strong>
 											For Blood Pressure & Heart:
-										</p>
-										<ol
-											className="ml-4 space-y-1"
-											start={5}>
-											<li>
-												5. Losartan + Amlodipine
-												(ALSARTAN AM): 1 tablet twice
-												daily after meals
-											</li>
-											<li>
-												6. Aspirin + Atorvastatin
-												(ECOSIRIN AV): 1 tablet after
-												dinner
-											</li>
-										</ol>
-									</div>
+										</strong>
+									</p>
+									<ul className="ml-4 space-y-1">
+										<li>
+											5. Losartan + Amlodipine (ALSARTAN
+											AM): 1 tablet twice daily after
+											meals
+										</li>
+										<li>
+											6. Aspirin + Atorvastatin (ECOSIRIN
+											AV): 1 tablet after dinner
+										</li>
+									</ul>
 
-									<div>
-										<p className="font-semibold">Others:</p>
-										<ol
-											className="ml-4 space-y-1"
-											start={7}>
-											<li>
-												7. Becosules: 1 capsule after
-												lunch
-											</li>
-											<li>
-												8. Tacrolimus ointment: Apply on
-												affected areas alternate days
-											</li>
-											<li>
-												9. Mometasone ointment: Apply on
-												affected areas alternate days
-											</li>
-										</ol>
-									</div>
+									<p className="mt-3">
+										<strong>Others:</strong>
+									</p>
+									<ul className="ml-4 space-y-1">
+										<li>
+											7. Becosules: 1 capsule after lunch
+										</li>
+										<li>
+											8. Tacrolimus ointment: Apply on
+											affected areas alternate days
+										</li>
+										<li>
+											9. Mometasone ointment: Apply on
+											affected areas alternate days
+										</li>
+									</ul>
 								</div>
 							</CardContent>
 						</Card>

@@ -13,6 +13,10 @@ import {
 	Minus,
 	BarChart3,
 	Table,
+	ChevronDown,
+	ChevronUp,
+	Plus,
+	Minus as MinusIcon,
 } from "lucide-react";
 import {
 	LineChart,
@@ -34,6 +38,18 @@ export default function LabMonitoringEnhanced() {
 		hba1c: "chart",
 		lipids: "chart",
 		ascvd: "chart",
+		creatinine: "chart",
+		potassium: "chart",
+		acr: "chart",
+		microalbumin: "chart",
+	});
+
+	const [expandedSections, setExpandedSections] = useState({
+		monthly: true,
+		quarterly: true,
+		yearly: true,
+		renal: true,
+		other: false,
 	});
 
 	const monthlyMonitoring = {
@@ -88,6 +104,46 @@ export default function LabMonitoringEnhanced() {
 			{ date: "2022", risk: 12.5 },
 			{ date: "2023", risk: 14.2 },
 			{ date: "2024", risk: 15.2 },
+		],
+	};
+
+	// New renal function monitoring data
+	const renalMonitoring = {
+		SerumCreatinine: [
+			{ date: "2024-01", value: 1.0, threshold: { max: 1.2 } },
+			{ date: "2024-02", value: 1.1, threshold: { max: 1.2 } },
+			{ date: "2024-03", value: 1.0, threshold: { max: 1.2 } },
+			{ date: "2024-04", value: 1.1, threshold: { max: 1.2 } },
+			{ date: "2024-05", value: 1.2, threshold: { max: 1.2 } },
+			{ date: "2024-06", value: 1.2, threshold: { max: 1.2 } },
+			{ date: "2024-07", value: 1.2, threshold: { max: 1.2 } },
+		],
+		Potassium: [
+			{ date: "2024-01", value: 4.5, threshold: { min: 3.5, max: 5.0 } },
+			{ date: "2024-02", value: 4.7, threshold: { min: 3.5, max: 5.0 } },
+			{ date: "2024-03", value: 4.6, threshold: { min: 3.5, max: 5.0 } },
+			{ date: "2024-04", value: 4.8, threshold: { min: 3.5, max: 5.0 } },
+			{ date: "2024-05", value: 4.9, threshold: { min: 3.5, max: 5.0 } },
+			{ date: "2024-06", value: 4.8, threshold: { min: 3.5, max: 5.0 } },
+			{ date: "2024-07", value: 4.8, threshold: { min: 3.5, max: 5.0 } },
+		],
+		UrinACR: [
+			{ date: "2024-01", value: 32, threshold: { max: 30 } },
+			{ date: "2024-02", value: 35, threshold: { max: 30 } },
+			{ date: "2024-03", value: 28, threshold: { max: 30 } },
+			{ date: "2024-04", value: 42, threshold: { max: 30 } },
+			{ date: "2024-05", value: 38, threshold: { max: 30 } },
+			{ date: "2024-06", value: 45, threshold: { max: 30 } },
+			{ date: "2024-07", value: 45, threshold: { max: 30 } },
+		],
+		UrineMicroalbumin: [
+			{ date: "2024-01", value: 25, threshold: { max: 30 } },
+			{ date: "2024-02", value: 28, threshold: { max: 30 } },
+			{ date: "2024-03", value: 22, threshold: { max: 30 } },
+			{ date: "2024-04", value: 35, threshold: { max: 30 } },
+			{ date: "2024-05", value: 32, threshold: { max: 30 } },
+			{ date: "2024-06", value: 38, threshold: { max: 30 } },
+			{ date: "2024-07", value: 38, threshold: { max: 30 } },
 		],
 	};
 
@@ -158,6 +214,13 @@ export default function LabMonitoringEnhanced() {
 		setViewMode((prev) => ({
 			...prev,
 			[metric]: prev[metric] === "chart" ? "table" : "chart",
+		}));
+	};
+
+	const toggleSection = (section: keyof typeof expandedSections) => {
+		setExpandedSections((prev) => ({
+			...prev,
+			[section]: !prev[section],
 		}));
 	};
 
@@ -420,12 +483,18 @@ export default function LabMonitoringEnhanced() {
 						<table className="w-full text-xs sm:text-sm min-w-full">
 							<thead className="bg-gray-50">
 								<tr>
-									<th className="p-2 sm:p-3 text-left">Date</th>
-									<th className="p-2 sm:p-3 text-left">Value</th>
+									<th className="p-2 sm:p-3 text-left">
+										Date
+									</th>
+									<th className="p-2 sm:p-3 text-left">
+										Value
+									</th>
 									<th className="p-2 sm:p-3 text-left hidden sm:table-cell">
 										Optimal Range
 									</th>
-									<th className="p-2 sm:p-3 text-left">Status</th>
+									<th className="p-2 sm:p-3 text-left">
+										Status
+									</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -489,7 +558,9 @@ export default function LabMonitoringEnhanced() {
 										<tr
 											key={index}
 											className="border-t">
-											<td className="p-2 sm:p-3">{item.date}</td>
+											<td className="p-2 sm:p-3">
+												{item.date}
+											</td>
 											<td className="p-2 sm:p-3 font-semibold">
 												{value}
 												{thresholds?.unit || ""}
@@ -527,20 +598,22 @@ export default function LabMonitoringEnhanced() {
 			</h1>
 
 			<Tabs
-				defaultValue="longitudinal"
+				defaultValue="trackers"
 				className="w-full space-y-2 sm:space-y-0">
 				<TabsList className="mb-4 w-full flex-wrap h-auto gap-1 p-1">
-					<TabsTrigger value="longitudinal" className="flex-1 text-xs sm:text-sm">
-						Tracker
+					<TabsTrigger
+						value="trackers"
+						className="flex-1 text-xs sm:text-sm">
+						Trackers
 					</TabsTrigger>
-					<TabsTrigger value="lab-reports" className="flex-1 text-xs sm:text-sm">Lab Reports</TabsTrigger>
-					<TabsTrigger value="other-labs" className="flex-1 text-xs sm:text-sm">
-						Other Labs
+					<TabsTrigger
+						value="reports"
+						className="flex-1 text-xs sm:text-sm">
+						Reports
 					</TabsTrigger>
-					<TabsTrigger value="reports" className="flex-1 text-xs sm:text-sm">Reports</TabsTrigger>
 				</TabsList>
 
-				<TabsContent value="longitudinal">
+				<TabsContent value="trackers">
 					<div className="space-y-6">
 						{/* Monthly Monitoring */}
 						<Card className="bg-white shadow-lg">
@@ -590,17 +663,93 @@ export default function LabMonitoringEnhanced() {
 
 						{/* Quarterly Monitoring */}
 						<Card className="bg-white shadow-lg">
-							<CardHeader>
+							<CardHeader className="flex justify-between items-center">
 								<CardTitle className="text-xl text-navy-600">
 									Quarterly Monitoring (3 Monthly)
 								</CardTitle>
+								<Button
+									variant="ghost"
+									size="sm"
+									onClick={() => toggleSection("quarterly")}
+									className="h-8 w-8 p-0">
+									{expandedSections.quarterly ? (
+										<MinusIcon className="h-4 w-4" />
+									) : (
+										<Plus className="h-4 w-4" />
+									)}
+								</Button>
 							</CardHeader>
 							<CardContent>
-								{renderDataView(
-									quarterlyMonitoring.HbA1c,
-									"hba1c",
-									"HbA1c (%)",
-									{ unit: "%", optimal: "≤7.5" }
+								{expandedSections.quarterly &&
+									renderDataView(
+										quarterlyMonitoring.HbA1c,
+										"hba1c",
+										"HbA1c (%)",
+										{ unit: "%", optimal: "≤7.5" }
+									)}
+							</CardContent>
+						</Card>
+
+						{/* Renal Monitoring Section */}
+						<Card className="bg-white shadow-lg">
+							<CardHeader className="flex justify-between items-center">
+								<CardTitle className="text-xl text-navy-600">
+									Renal Monitoring
+								</CardTitle>
+								<Button
+									variant="ghost"
+									size="sm"
+									onClick={() => toggleSection("renal")}
+									className="h-8 w-8 p-0">
+									{expandedSections.renal ? (
+										<MinusIcon className="h-4 w-4" />
+									) : (
+										<Plus className="h-4 w-4" />
+									)}
+								</Button>
+							</CardHeader>
+							<CardContent>
+								{expandedSections.renal && (
+									<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+										<div>
+											{renderDataView(
+												renalMonitoring.SerumCreatinine,
+												"creatinine",
+												"Serum Creatinine (mg/dl)",
+												{
+													unit: "mg/dl",
+													optimal: "≤1.2",
+												}
+											)}
+										</div>
+										<div>
+											{renderDataView(
+												renalMonitoring.Potassium,
+												"potassium",
+												"Potassium (mEq/L)",
+												{
+													unit: "mEq/L",
+													optimal: "3.5-5.0",
+												}
+											)}
+										</div>
+										<div>
+											{renderDataView(
+												renalMonitoring.UrinACR,
+												"acr",
+												"Urine ACR (mg/g)",
+												{ unit: "mg/g", optimal: "≤30" }
+											)}
+										</div>
+										<div>
+											{renderDataView(
+												renalMonitoring.UrineMicroalbumin,
+												"microalbumin",
+												"Urine Microalbumin (mg/g)",
+												{ unit: "mg/g", optimal: "≤30" }
+											)}
+										</div>
+									</div>
 								)}
 							</CardContent>
 						</Card>
