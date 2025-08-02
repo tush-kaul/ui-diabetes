@@ -4,7 +4,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PatientOverviewEnhanced from "./patient-overview-enhanced";
 import MedicationsManagementComplete from "./medications-management-complete";
 import LabMonitoringEnhanced from "./lab-monitoring-enhanced";
-import ComprehensiveAssessmentFunctional from "./comprehensive-assessment-functional";
 import LifestyleEnhanced from "./lifestyle-enhanced";
 import AdherenceCommunication from "./adherence-communication";
 import AdvicePrintableFixed from "./advice-printable-fixed";
@@ -29,11 +28,12 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "./components/ui/tooltip";
+import ComprehensiveAssessmentFunctional from "./comprehensive-assessment-functional";
 
 export default function PatientDashboardMain() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	
+
 	const activeTab = searchParams.get("tab") || "overview";
 	const subTab = searchParams.get("subtab") || undefined;
 
@@ -109,7 +109,9 @@ export default function PatientDashboardMain() {
 	const renderTabContent = () => {
 		switch (activeTab) {
 			case "overview":
-				return <PatientOverviewEnhanced onNavigate={handleNavigation} />;
+				return (
+					<PatientOverviewEnhanced onNavigate={handleNavigation} />
+				);
 			case "medications":
 				return <MedicationsEnhanced />;
 			case "lab-monitoring":
@@ -123,7 +125,9 @@ export default function PatientDashboardMain() {
 			case "advice-sheet":
 				return <AdvicePrintableFixed />;
 			default:
-				return <PatientOverviewEnhanced onNavigate={handleNavigation} />;
+				return (
+					<PatientOverviewEnhanced onNavigate={handleNavigation} />
+				);
 		}
 	};
 

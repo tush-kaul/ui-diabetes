@@ -23,6 +23,7 @@ import {
 	TrendingDown,
 	Minus,
 	Pill,
+	FlaskConical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -73,7 +74,27 @@ export default function PatientOverviewEnhanced({
 	onNavigate,
 }: PatientOverviewEnhancedProps) {
 	const [newComplaint, setNewComplaint] = useState("");
+	const [complaintDuration, setComplaintDuration] = useState("");
+	const [complaintLocation, setComplaintLocation] = useState("");
+	const [complaintIntensity, setComplaintIntensity] = useState("");
 	const [editingDiagnosis, setEditingDiagnosis] = useState(false);
+	const [showDrugDetails, setShowDrugDetails] = useState(false);
+	const [complaints, setComplaints] = useState([
+		{
+			id: 1,
+			complaint: "Occasional fatigue",
+			duration: "2 weeks",
+			location: "General",
+			intensity: "Mild",
+		},
+		{
+			id: 2,
+			complaint: "Mild numbness in feet",
+			duration: "3 months",
+			location: "Both feet",
+			intensity: "Mild",
+		},
+	]);
 	// Helper function to calculate years since diagnosis
 	const calculateYearsSince = (diagnosisYear: number) => {
 		const currentYear = new Date().getFullYear();
@@ -195,33 +216,27 @@ export default function PatientOverviewEnhanced({
 			finding: "Moderate NPDR detected",
 			value: "Requires laser therapy",
 			lastDone: "October 2023",
+			nextDue: "January 2025",
 		},
 		{
 			organ: "Nephropathy",
 			icon: Kidney,
 			status: "done-assessed",
 			color: "text-green-500",
-			finding: "eGFR 85 ml/min/1.73m²",
-			value: "Normal kidney function",
+			finding: "eGFR 65 ml/min/1.73m²",
+			value: "Mild CKD Stage 2-3a",
 			lastDone: "July 2024",
+			nextDue: "January 2025",
 		},
 		{
-			organ: "Neuropathy",
-			icon: Brain,
-			status: "done-assessed",
-			color: "text-green-500",
-			finding: "Normal reflexes, no symptoms",
-			value: "No peripheral neuropathy",
-			lastDone: "July 2024",
-		},
-		{
-			organ: "IHD",
+			organ: "IHD/HF",
 			icon: Heart,
 			status: "not-done",
 			color: "text-orange-500",
 			finding: "Pending assessment",
-			value: "ECG and stress test needed",
+			value: "ECG, ECHO, stress test needed",
 			lastDone: "Not assessed",
+			nextDue: "Overdue - Schedule ASAP",
 		},
 		{
 			organ: "CVA/Stroke",
@@ -231,15 +246,7 @@ export default function PatientOverviewEnhanced({
 			finding: "Status unknown",
 			value: "Clinical assessment pending",
 			lastDone: "Not assessed",
-		},
-		{
-			organ: "PVD",
-			icon: Activity,
-			status: "not-done",
-			color: "text-orange-500",
-			finding: "Status unknown",
-			value: "ABI assessment needed",
-			lastDone: "Not assessed",
+			nextDue: "February 2025",
 		},
 		{
 			organ: "MASLD",
@@ -249,19 +256,21 @@ export default function PatientOverviewEnhanced({
 			finding: "Pending assessment",
 			value: "Liver ultrasound required",
 			lastDone: "Not assessed",
+			nextDue: "March 2025",
 		},
 		{
-			organ: "Diabetic Foot",
+			organ: "Diabetic Foot & Peripheral Assessment",
 			icon: Activity,
 			status: "done-assessed",
 			color: "text-green-500",
-			finding: "No ulcers, intact sensation",
-			value: "Good vascular supply",
+			finding: "No ulcers, intact sensation, normal ABI",
+			value: "Good foot care, no neuropathy/PVD",
 			lastDone: "July 2024",
+			nextDue: "July 2025",
 		},
 	];
 
-	// Abnormal metrics for quick access
+	// Abnormal metrics for quick access (including non-key metrics)
 	const abnormalMetrics = [
 		{
 			name: "HbA1c",
@@ -276,6 +285,27 @@ export default function PatientOverviewEnhanced({
 			normal: "&lt;10%",
 			status: "High",
 			priority: "high",
+		},
+		{
+			name: "eGFR",
+			value: "65 ml/min/1.73m²",
+			normal: "&gt;90 ml/min/1.73m²",
+			status: "Mild decline",
+			priority: "high",
+		},
+		{
+			name: "PHQ-9",
+			value: "8",
+			normal: "&lt;5",
+			status: "Mild Depression",
+			priority: "high",
+		},
+		{
+			name: "HDL",
+			value: "36 mg/dl",
+			normal: "&gt;40 mg/dl (M)",
+			status: "Low",
+			priority: "medium",
 		},
 		{
 			name: "Hemoglobin",
@@ -414,25 +444,170 @@ export default function PatientOverviewEnhanced({
 							</Select>
 							<Button>Add Complaint</Button>
 						</div>
-						<div className="flex items-center space-x-4">
-							<Input
-								placeholder="Enter new complaint"
-								value={newComplaint}
-								onChange={(e) =>
-									setNewComplaint(e.target.value)
-								}
-								className="w-full sm:w-64"
-							/>
-							<Button>Add New</Button>
+						<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+							<div className="space-y-2">
+								<Label className="text-sm font-medium">
+									Complaint
+								</Label>
+								<Input
+									placeholder="Enter complaint"
+									value={newComplaint}
+									onChange={(e) =>
+										setNewComplaint(e.target.value)
+									}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label className="text-sm font-medium">
+									Duration
+								</Label>
+								<Select
+									value={complaintDuration}
+									onValueChange={setComplaintDuration}>
+									<SelectTrigger>
+										<SelectValue placeholder="Select duration" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="few-days">
+											Few days
+										</SelectItem>
+										<SelectItem value="1-week">
+											1 week
+										</SelectItem>
+										<SelectItem value="2-weeks">
+											2 weeks
+										</SelectItem>
+										<SelectItem value="1-month">
+											1 month
+										</SelectItem>
+										<SelectItem value="3-months">
+											3 months
+										</SelectItem>
+										<SelectItem value="6-months">
+											6+ months
+										</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="space-y-2">
+								<Label className="text-sm font-medium">
+									Location
+								</Label>
+								<Input
+									placeholder="Enter location"
+									value={complaintLocation}
+									onChange={(e) =>
+										setComplaintLocation(e.target.value)
+									}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label className="text-sm font-medium">
+									Intensity
+								</Label>
+								<Select
+									value={complaintIntensity}
+									onValueChange={setComplaintIntensity}>
+									<SelectTrigger>
+										<SelectValue placeholder="Select intensity" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="mild">
+											Mild (1-3)
+										</SelectItem>
+										<SelectItem value="moderate">
+											Moderate (4-6)
+										</SelectItem>
+										<SelectItem value="severe">
+											Severe (7-10)
+										</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
 						</div>
-						<div className="mt-4">
-							<p className="text-sm text-gray-600">
-								Current complaints:
-							</p>
-							<ul className="list-disc list-inside mt-2 space-y-1">
-								<li>Occasional fatigue</li>
-								<li>Mild numbness in feet</li>
-							</ul>
+						<div className="flex justify-end mt-4">
+							<Button
+								onClick={() => {
+									if (newComplaint.trim()) {
+										const newComplaintObj = {
+											id: complaints.length + 1,
+											complaint: newComplaint,
+											duration:
+												complaintDuration ||
+												"Not specified",
+											location:
+												complaintLocation ||
+												"Not specified",
+											intensity:
+												complaintIntensity ||
+												"Not specified",
+										};
+										setComplaints([
+											...complaints,
+											newComplaintObj,
+										]);
+										setNewComplaint("");
+										setComplaintDuration("");
+										setComplaintLocation("");
+										setComplaintIntensity("");
+									}
+								}}
+								disabled={!newComplaint.trim()}>
+								Add Complaint
+							</Button>
+						</div>
+						<div className="mt-6">
+							<h4 className="text-sm font-semibold text-gray-700 mb-3">
+								Current Complaints:
+							</h4>
+							<div className="space-y-3">
+								{complaints.map((item) => (
+									<div
+										key={item.id}
+										className="border rounded-lg p-3 bg-gray-50">
+										<div className="flex items-start justify-between">
+											<div className="flex-1">
+												<div className="font-medium text-gray-900">
+													{item.complaint}
+												</div>
+												<div className="grid grid-cols-3 gap-4 mt-2 text-xs text-gray-600">
+													<div>
+														<span className="font-medium">
+															Duration:
+														</span>{" "}
+														{item.duration}
+													</div>
+													<div>
+														<span className="font-medium">
+															Location:
+														</span>{" "}
+														{item.location}
+													</div>
+													<div>
+														<span className="font-medium">
+															Intensity:
+														</span>{" "}
+														{item.intensity}
+													</div>
+												</div>
+											</div>
+											<Button
+												size="sm"
+												variant="ghost"
+												onClick={() =>
+													setComplaints(
+														complaints.filter(
+															(c) =>
+																c.id !== item.id
+														)
+													)
+												}>
+												<X className="h-4 w-4" />
+											</Button>
+										</div>
+									</div>
+								))}
+							</div>
 						</div>
 					</div>
 				</CardContent>
@@ -501,6 +676,69 @@ export default function PatientOverviewEnhanced({
 				</CardContent>
 			</Card>
 
+			{/* Drug Allergies/Intolerance - Moved beside Critical Alerts */}
+			<Card className="bg-orange-50 border-orange-200 shadow-lg mb-6">
+				<CardHeader>
+					<CardTitle className="text-xl text-orange-700 flex items-center">
+						<AlertTriangle className="mr-2 h-5 w-5" />
+						Drug Allergies/Intolerance
+					</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<div className="space-y-2">
+						<p className="text-green-600">
+							No known drug allergies
+						</p>
+						<Dialog>
+							<DialogTrigger asChild>
+								<Button variant="outline">
+									Add Allergy/Intolerance
+								</Button>
+							</DialogTrigger>
+							<DialogContent>
+								<DialogHeader>
+									<DialogTitle>
+										Add Drug Allergy/Intolerance
+									</DialogTitle>
+								</DialogHeader>
+								<div className="space-y-4">
+									<div>
+										<Label>Drug Name</Label>
+										<Input placeholder="Enter drug name" />
+									</div>
+									<div>
+										<Label>Reaction Type</Label>
+										<Select>
+											<SelectTrigger>
+												<SelectValue placeholder="Select reaction type" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="allergy">
+													Allergy
+												</SelectItem>
+												<SelectItem value="intolerance">
+													Intolerance
+												</SelectItem>
+												<SelectItem value="adverse-reaction">
+													Adverse Reaction
+												</SelectItem>
+											</SelectContent>
+										</Select>
+									</div>
+									<div>
+										<Label>Description</Label>
+										<Textarea placeholder="Describe the reaction..." />
+									</div>
+									<Button className="w-full">
+										Add Allergy
+									</Button>
+								</div>
+							</DialogContent>
+						</Dialog>
+					</div>
+				</CardContent>
+			</Card>
+
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
 				{/* Enhanced Diagnosis Section */}
 				<Card className="bg-white shadow-md">
@@ -552,7 +790,24 @@ export default function PatientOverviewEnhanced({
 														checked
 														// readOnly
 													/>{" "}
-													<span>{med}</span>
+													<span
+														className={
+															med.includes(
+																"3 groups"
+															)
+																? "cursor-pointer underline text-blue-600"
+																: ""
+														}
+														onClick={() =>
+															med.includes(
+																"3 groups"
+															) &&
+															setShowDrugDetails(
+																true
+															)
+														}>
+														{med}
+													</span>
 												</div>
 											)
 										)}
@@ -575,6 +830,58 @@ export default function PatientOverviewEnhanced({
 						</div>
 					</CardContent>
 				</Card>
+
+				{/* Drug Details Dialog */}
+				<Dialog
+					open={showDrugDetails}
+					onOpenChange={setShowDrugDetails}>
+					<DialogContent className="max-w-md">
+						<DialogHeader>
+							<DialogTitle>Diabetes Oral Drug Groups</DialogTitle>
+						</DialogHeader>
+						<div className="space-y-3">
+							<div className="p-3 border rounded-lg">
+								<h4 className="font-semibold text-blue-600">
+									Group 1: Biguanides
+								</h4>
+								<p className="text-sm text-gray-600">
+									Metformin 500mg/2mg - Reduces glucose
+									production
+								</p>
+							</div>
+							<div className="p-3 border rounded-lg">
+								<h4 className="font-semibold text-green-600">
+									Group 2: Sulfonylureas
+								</h4>
+								<p className="text-sm text-gray-600">
+									Glimepiride - Stimulates insulin secretion
+								</p>
+							</div>
+							<div className="p-3 border rounded-lg">
+								<h4 className="font-semibold text-purple-600">
+									Group 3: Alpha-glucosidase inhibitors
+								</h4>
+								<p className="text-sm text-gray-600">
+									Voglibose 0.2mg - Delays carbohydrate
+									absorption
+								</p>
+							</div>
+							<div className="p-3 border rounded-lg">
+								<h4 className="font-semibold text-orange-600">
+									Group 4: DPP-4 + SGLT2 (New Addition)
+								</h4>
+								<p className="text-sm text-gray-600">
+									Sitagliptin + Dapagliflozin - Dual mechanism
+								</p>
+							</div>
+						</div>
+						<Button
+							onClick={() => setShowDrugDetails(false)}
+							className="w-full mt-4">
+							Close
+						</Button>
+					</DialogContent>
+				</Dialog>
 
 				{/* Enhanced Key Health Metrics */}
 				<Card className="bg-white shadow-md">
@@ -631,22 +938,11 @@ export default function PatientOverviewEnhanced({
 								</div>
 							</li>
 							<li className="flex items-center justify-between">
-								<span>HDL: 36 mg/dl (03/05/2024)</span>
+								<span>eGFR: 65 ml/min/1.73m² (calculated)</span>
 								<div className="flex items-center">
-									<TrendingDown className="h-4 w-4 text-red-500 mr-1" />
+									<TrendingDown className="h-4 w-4 text-orange-500 mr-1" />
 									<span className="text-xs text-gray-500">
-										vs 42 mg/dl
-									</span>
-								</div>
-							</li>
-							<li className="flex items-center justify-between">
-								<span>
-									Triglycerides: 126 mg/dl (03/05/2024)
-								</span>
-								<div className="flex items-center">
-									<TrendingDown className="h-4 w-4 text-green-500 mr-1" />
-									<span className="text-xs text-gray-500">
-										vs 156 mg/dl
+										vs 72 ml/min/1.73m²
 									</span>
 								</div>
 							</li>
@@ -695,21 +991,21 @@ export default function PatientOverviewEnhanced({
 									</span>
 								</div>
 							</li>
-							<li className="text-yellow-500 flex items-center justify-between">
-								<span>Vit B12: 180 pg/ml (Low)</span>
+							<li className="text-red-500 flex items-center justify-between">
+								<span>PHQ-9: 8 (Mild Depression)</span>
 								<div className="flex items-center">
-									<TrendingDown className="h-4 w-4 text-red-500 mr-1" />
+									<TrendingUp className="h-4 w-4 text-red-500 mr-1" />
 									<span className="text-xs text-gray-500">
-										vs 220 pg/ml
+										vs 5 (previous)
 									</span>
 								</div>
 							</li>
 							<li className="text-yellow-500 flex items-center justify-between">
-								<span>Vit D: 18 ng/ml (Deficient)</span>
+								<span>GAD-7: 6 (Mild Anxiety)</span>
 								<div className="flex items-center">
-									<TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+									<Minus className="h-4 w-4 text-gray-500 mr-1" />
 									<span className="text-xs text-gray-500">
-										vs 15 ng/ml
+										stable
 									</span>
 								</div>
 							</li>
@@ -804,214 +1100,184 @@ export default function PatientOverviewEnhanced({
 				</Card>
 			</div>
 
-			<div className="w-full  border-t border-gray-200 pt-4 gap-[5%]">
-				{/* Current Medications - Integrated Prescription */}
+			<div className="w-full border-t border-gray-200 pt-4 gap-[5%]">
+				{/* Current Medications - Optimized Layout */}
 				<Card
 					onClick={() => onNavigate("medications")}
 					className="bg-white shadow-lg mb-6 cursor-pointer hover:shadow-xl transition-shadow">
-					<CardHeader>
+					<CardHeader className="pb-3">
 						<CardTitle className="text-xl text-navy-600 flex items-center justify-between">
 							Current Medications (Integrated Prescription)
 							<ArrowRight className="h-4 w-4" />
 						</CardTitle>
 					</CardHeader>
-					<CardContent>
-						<div className="space-y-4">
-							{/* Diabetes Medications */}
-							<div className="border-l-4 border-blue-500 pl-4">
-								<div className="flex items-center mb-2">
-									<Badge className="bg-blue-500 text-white mr-2">
-										Diabetes
-									</Badge>
-									<h4 className="font-semibold text-blue-600">
-										Diabetes Management
-									</h4>
-								</div>
-								<ul className="space-y-2 text-sm">
-									<li className="flex items-start">
-										<TrendingUp className="h-4 w-4 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
-										<span>
-											1. Inj Novomix Penfill 20-22/16-18
-											units (↑ from 18-16) - 10 min before
-											meals
-										</span>
-									</li>
-									<li className="flex items-start">
-										<TrendingUp className="h-4 w-4 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
-										<span>
-											2. Tab Metformin + Glimepiride
-											500mg/2mg (↑ from 500mg/1mg) - After
-											food
-										</span>
-									</li>
-									<li className="flex items-start">
-										<Plus className="h-4 w-4 text-blue-500 mr-2 mt-0.5 flex-shrink-0" />
-										<span>
-											3. Tab Sitagliptin + Dapagliflozin
-											100mg/10mg (NEW) - Before food, 30
-											min
-										</span>
-									</li>
-									<li className="flex items-start">
-										<Minus className="h-4 w-4 text-gray-500 mr-2 mt-0.5 flex-shrink-0" />
-										<span>
-											4. Tab Voglibose 0.2mg - With food
-											(stable dose)
-										</span>
-									</li>
-								</ul>
-							</div>
+					<CardContent className="pt-0">
+						{/* Compact Table Layout */}
+						<div className="overflow-hidden rounded-lg border border-gray-200">
+							<table className="w-full text-sm">
+								<thead className="bg-gray-50">
+									<tr>
+										<th className="px-3 py-2 text-left font-medium text-gray-900 w-1/4">
+											Condition
+										</th>
+										<th className="px-3 py-2 text-left font-medium text-gray-900 w-1/2">
+											Medication & Dosage
+										</th>
+										<th className="px-3 py-2 text-left font-medium text-gray-900 w-1/4">
+											Status
+										</th>
+									</tr>
+								</thead>
+								<tbody className="divide-y divide-gray-200">
+									{/* Diabetes Medications */}
+									<tr className="hover:bg-gray-50">
+										<td className="px-3 py-2 font-medium text-blue-600">
+											Diabetes
+										</td>
+										<td className="px-3 py-2">
+											Inj Novomix Penfill 20-22/16-18
+											units - 10 min before meals
+										</td>
+										<td className="px-3 py-2">
+											<Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-300 transition-all duration-300">
+												<TrendingUp className="h-3 w-3 mr-1" />
+												Active (↑)
+											</Badge>
+										</td>
+									</tr>
+									<tr className="hover:bg-gray-50">
+										<td className="px-3 py-2"></td>
+										<td className="px-3 py-2">
+											Tab Metformin + Glimepiride
+											500mg/2mg - After food
+										</td>
+										<td className="px-3 py-2">
+											<Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-300 transition-all duration-300 ">
+												<TrendingUp className="h-3 w-3 mr-1" />
+												Active (↑)
+											</Badge>
+										</td>
+									</tr>
+									<tr className="hover:bg-gray-50">
+										<td className="px-3 py-2"></td>
+										<td className="px-3 py-2">
+											Tab Sitagliptin + Dapagliflozin
+											100mg/10mg - Before food, 30 min
+										</td>
+										<td className="px-3 py-2">
+											<Badge className="bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-300 transition-all duration-300">
+												<Plus className="h-3 w-3 mr-1" />
+												NEW
+											</Badge>
+										</td>
+									</tr>
+									<tr className="hover:bg-gray-50">
+										<td className="px-3 py-2"></td>
+										<td className="px-3 py-2">
+											Tab Voglibose 0.2mg - With food
+										</td>
+										<td className="px-3 py-2">
+											<Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-300 transition-all duration-300">
+												<Minus className="h-3 w-3 mr-1" />
+												Active (=)
+											</Badge>
+										</td>
+									</tr>
 
-							{/* Hypertension Medications */}
-							<div className="border-l-4 border-purple-500 pl-4">
-								<div className="flex items-center mb-2">
-									<Badge className="bg-purple-500 text-white mr-2">
-										Hypertension
-									</Badge>
-									<h4 className="font-semibold text-purple-600">
-										Blood Pressure Management
-									</h4>
-								</div>
-								<ul className="space-y-2 text-sm">
-									<li className="flex items-start">
-										<TrendingDown className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-										<span>
-											5. Tab Losartan + Amlodipine
-											50mg/5mg (↓ from 50mg/10mg) - After
-											food
-										</span>
-									</li>
-								</ul>
-							</div>
+									{/* Hypertension Medications */}
+									<tr className="hover:bg-gray-50">
+										<td className="px-3 py-2 font-medium text-purple-600">
+											Hypertension
+										</td>
+										<td className="px-3 py-2">
+											Tab Losartan + Amlodipine 50mg/5mg -
+											After food
+										</td>
+										<td className="px-3 py-2">
+											<Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-300 transition-all duration-300">
+												<TrendingDown className="h-3 w-3 mr-1" />
+												Active (↓)
+											</Badge>
+										</td>
+									</tr>
 
-							{/* Cardiovascular Protection */}
-							<div className="border-l-4 border-orange-500 pl-4">
-								<div className="flex items-center mb-2">
-									<Badge className="bg-orange-500 text-white mr-2">
-										Cardioprotective
-									</Badge>
-									<h4 className="font-semibold text-orange-600">
-										Cardiovascular Protection
-									</h4>
-								</div>
-								<ul className="space-y-2 text-sm">
-									<li className="flex items-start">
-										<Minus className="h-4 w-4 text-gray-500 mr-2 mt-0.5 flex-shrink-0" />
-										<span>
-											6. Tab Aspirin + Atorvastatin
-											75mg/10mg - After food (stable)
-										</span>
-									</li>
-								</ul>
-							</div>
+									{/* Cardiovascular Protection */}
+									<tr className="hover:bg-gray-50">
+										<td className="px-3 py-2 font-medium text-orange-600">
+											Cardioprotective
+										</td>
+										<td className="px-3 py-2">
+											Tab Aspirin + Atorvastatin 75mg/10mg
+											- After food
+										</td>
+										<td className="px-3 py-2">
+											<Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-300 transition-all duration-300">
+												<Minus className="h-3 w-3 mr-1" />
+												Active (=)
+											</Badge>
+										</td>
+									</tr>
 
-							{/* Discontinued & Others */}
-							<div className="border-l-4 border-gray-400 pl-4">
-								<div className="flex items-center mb-2">
-									<Badge className="bg-gray-500 text-white mr-2">
-										Others
-									</Badge>
-									<h4 className="font-semibold text-gray-600">
-										Other Medications
-									</h4>
-								</div>
-								<ul className="space-y-2 text-sm">
-									<li className="flex items-start">
-										<X className="h-4 w-4 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
-										<span className="line-through text-red-500">
-											7. Tab Apremilast 10mg (DISCONTINUED
-											- ineffective)
-										</span>
-									</li>
-									<li className="flex items-start">
-										<Minus className="h-4 w-4 text-gray-500 mr-2 mt-0.5 flex-shrink-0" />
-										<span>
-											8. Cap Becosules (B-complex) - After
+									{/* Other/Discontinued Medications */}
+									<tr className="hover:bg-gray-50">
+										<td className="px-3 py-2 font-medium text-gray-600">
+											Others
+										</td>
+										<td className="px-3 py-2 line-through text-red-500">
+											Tab Apremilast 10mg (ineffective)
+										</td>
+										<td className="px-3 py-2">
+											<Badge className="bg-red-100 text-red-800 border-red-200 hover:bg-red-300 transition-all duration-300">
+												<X className="h-3 w-3 mr-1" />
+												STOPPED
+											</Badge>
+										</td>
+									</tr>
+									<tr className="hover:bg-gray-50">
+										<td className="px-3 py-2"></td>
+										<td className="px-3 py-2">
+											Cap Becosules (B-complex) - After
 											food
-										</span>
-									</li>
-									<li className="flex items-start">
-										<Minus className="h-4 w-4 text-gray-500 mr-2 mt-0.5 flex-shrink-0" />
-										<span>
-											9. Oint Tacrolimus 0.1% - Alternate
+										</td>
+										<td className="px-3 py-2">
+											<Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-300 transition-all duration-300">
+												<Minus className="h-3 w-3 mr-1" />
+												Active (=)
+											</Badge>
+										</td>
+									</tr>
+									<tr className="hover:bg-gray-50">
+										<td className="px-3 py-2"></td>
+										<td className="px-3 py-2">
+											Oint Tacrolimus 0.1% - Alternate
 											days
-										</span>
-									</li>
-									<li className="flex items-start">
-										<Minus className="h-4 w-4 text-gray-500 mr-2 mt-0.5 flex-shrink-0" />
-										<span>
-											10. Oint Mometasone furoate 1mg -
+										</td>
+										<td className="px-3 py-2">
+											<Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-300 transition-all duration-300">
+												<Minus className="h-3 w-3 mr-1" />
+												Active (=)
+											</Badge>
+										</td>
+									</tr>
+									<tr className="hover:bg-gray-50">
+										<td className="px-3 py-2"></td>
+										<td className="px-3 py-2">
+											Oint Mometasone furoate 1mg -
 											Alternate days
-										</span>
-									</li>
-								</ul>
-							</div>
+										</td>
+										<td className="px-3 py-2">
+											<Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-300 transition-all duration-300">
+												<Minus className="h-3 w-3 mr-1" />
+												Active (=)
+											</Badge>
+										</td>
+									</tr>
+								</tbody>
+							</table>
 						</div>
 					</CardContent>
 				</Card>
 			</div>
-
-			{/* Drug Allergies */}
-			<Card className="bg-white shadow-lg mb-6">
-				<CardHeader>
-					<CardTitle className="text-xl text-navy-600">
-						Drug Allergies/Intolerance
-					</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<div className="space-y-2">
-						<p className="text-green-600">
-							No known drug allergies
-						</p>
-						<Dialog>
-							<DialogTrigger asChild>
-								<Button variant="outline">
-									Add Allergy/Intolerance
-								</Button>
-							</DialogTrigger>
-							<DialogContent>
-								<DialogHeader>
-									<DialogTitle>
-										Add Drug Allergy/Intolerance
-									</DialogTitle>
-								</DialogHeader>
-								<div className="space-y-4">
-									<div>
-										<Label>Drug Name</Label>
-										<Input placeholder="Enter drug name" />
-									</div>
-									<div>
-										<Label>Reaction Type</Label>
-										<Select>
-											<SelectTrigger>
-												<SelectValue placeholder="Select reaction type" />
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="allergy">
-													Allergy
-												</SelectItem>
-												<SelectItem value="intolerance">
-													Intolerance
-												</SelectItem>
-												<SelectItem value="adverse-reaction">
-													Adverse Reaction
-												</SelectItem>
-											</SelectContent>
-										</Select>
-									</div>
-									<div>
-										<Label>Description</Label>
-										<Textarea placeholder="Describe the reaction..." />
-									</div>
-									<Button className="w-full">
-										Add Allergy
-									</Button>
-								</div>
-							</DialogContent>
-						</Dialog>
-					</div>
-				</CardContent>
-			</Card>
 
 			{/* Adherence Section */}
 			<Card className="bg-white shadow-lg mb-6">
@@ -1193,133 +1459,307 @@ export default function PatientOverviewEnhanced({
 				</CardContent>
 			</Card>
 
-			{/* Time-in-Range Metrics */}
-			<Card
-				onClick={() => onNavigate("communication", "goals")}
-				className="bg-white shadow-lg mb-6 cursor-pointer hover:shadow-xl transition-shadow">
+			{/* Monitoring Recommendations based on HbA1c and Target Goals */}
+			<Card className="bg-blue-50 border-blue-200 shadow-lg mb-6">
 				<CardHeader>
-					<CardTitle className="text-xl text-navy-600 flex items-center justify-between">
-						Time-in-Range Metrics
-						<ArrowRight className="h-4 w-4" />
+					<CardTitle className="text-xl text-blue-700 flex items-center">
+						<Activity className="mr-2 h-5 w-5" />
+						Monitoring Recommendations
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
 					<div className="space-y-4">
-						{/* Blood Pressure Time-in-Range */}
-						<div className="p-3 border rounded-lg">
-							<div className="flex items-center justify-between mb-2">
-								<span className="font-medium">
-									Blood Pressure (last 30 days)
-								</span>
-								<span className="text-green-600">
-									Good Control
-								</span>
-							</div>
-							<div className="text-sm text-gray-600 mb-2">
-								Target: &lt;130/80 mmHg | Average: 130/84 mmHg
-							</div>
-							<div className="space-y-2">
-								<div className="flex items-center justify-between text-xs">
-									<span>In Range (&lt;130/80)</span>
-									<span>65%</span>
+						{/* Current Status Assessment */}
+						<div className="p-4 bg-white rounded-lg border">
+							<h4 className="font-semibold text-gray-800 mb-3">
+								Current Control Status
+							</h4>
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div className="space-y-2">
+									<div className="flex justify-between">
+										<span className="text-sm font-medium">
+											HbA1c Goal Achievement:
+										</span>
+										<span className="text-red-600 font-semibold">
+											Not Achieved (8.2% vs 7.5%)
+										</span>
+									</div>
+									<div className="flex justify-between">
+										<span className="text-sm font-medium">
+											BP Goal Achievement:
+										</span>
+										<span className="text-green-600 font-semibold">
+											Partially Achieved
+										</span>
+									</div>
 								</div>
-								<Progress
-									value={65}
-									className="h-2"
-								/>
+								<div className="space-y-2">
+									<div className="flex justify-between">
+										<span className="text-sm font-medium">
+											LDL Goal Achievement:
+										</span>
+										<span className="text-orange-600 font-semibold">
+											Close to Target
+										</span>
+									</div>
+									<div className="flex justify-between">
+										<span className="text-sm font-medium">
+											Overall Risk:
+										</span>
+										<span className="text-red-600 font-semibold">
+											High (ASCVD 15.2%)
+										</span>
+									</div>
+								</div>
 							</div>
 						</div>
 
-						{/* Glucose Time-in-Range (if CGM available) */}
-						<div className="p-3 border rounded-lg">
-							<div className="flex items-center justify-between mb-2">
-								<span className="font-medium">
-									Blood Glucose (last 14 days)
-								</span>
-								<span className="text-orange-600">
-									Needs Improvement
+						{/* Recommended Monitoring Frequency */}
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div className="p-4 bg-red-50 rounded-lg border border-red-200">
+								<h4 className="font-semibold text-red-700 mb-3">
+									Intensive Monitoring Required
+								</h4>
+								<ul className="space-y-2 text-sm">
+									<li className="flex items-center">
+										<AlertTriangle className="h-4 w-4 text-red-500 mr-2" />
+										<span>
+											<strong>SMBG:</strong> 2-3 times
+											daily (on insulin)
+										</span>
+									</li>
+									<li className="flex items-center">
+										<Heart className="h-4 w-4 text-red-500 mr-2" />
+										<span>
+											<strong>BP Monitoring:</strong> 2-3
+											times weekly
+										</span>
+									</li>
+									<li className="flex items-center">
+										<Calendar className="h-4 w-4 text-red-500 mr-2" />
+										<span>
+											<strong>Follow-up:</strong> Every
+											2-4 weeks
+										</span>
+									</li>
+									<li className="flex items-center">
+										<FlaskConical className="h-4 w-4 text-red-500 mr-2" />
+										<span>
+											<strong>HbA1c:</strong> Every 3
+											months
+										</span>
+									</li>
+								</ul>
+							</div>
+
+							<div className="p-4 bg-green-50 rounded-lg border border-green-200 hover:bg-green-300 transition-all duration-300">
+								<h4 className="font-semibold text-green-700 mb-3">
+									If Goals Achieved
+								</h4>
+								<ul className="space-y-2 text-sm text-gray-600">
+									<li className="flex items-center">
+										<Activity className="h-4 w-4 text-green-500 mr-2" />
+										<span>
+											<strong>SMBG:</strong> 1-2 times
+											daily would suffice
+										</span>
+									</li>
+									<li className="flex items-center">
+										<Heart className="h-4 w-4 text-green-500 mr-2" />
+										<span>
+											<strong>BP Monitoring:</strong>{" "}
+											Weekly would be adequate
+										</span>
+									</li>
+									<li className="flex items-center">
+										<Calendar className="h-4 w-4 text-green-500 mr-2" />
+										<span>
+											<strong>Follow-up:</strong> Every
+											3-6 months
+										</span>
+									</li>
+									<li className="flex items-center">
+										<FlaskConical className="h-4 w-4 text-green-500 mr-2" />
+										<span>
+											<strong>HbA1c:</strong> Every 6
+											months
+										</span>
+									</li>
+								</ul>
+							</div>
+						</div>
+
+						{/* eGFR-based Medication Alerts */}
+						<div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+							<h4 className="font-semibold text-orange-700 mb-3 flex items-center">
+								<AlertTriangle className="h-5 w-5 mr-2" />
+								Medication Safety Alert - eGFR Based
+							</h4>
+							<div className="space-y-2 text-sm">
+								<div className="p-3 bg-white rounded border-l-4 border-orange-400">
+									<div className="font-medium text-orange-800">
+										eGFR: 65 ml/min/1.73m² (Stage 2 CKD)
+									</div>
+									<div className="text-orange-700 mt-1">
+										⚠️ Review medications dose and necessity
+									</div>
+									<ul className="mt-2 text-orange-600 space-y-1">
+										<li>
+											• Metformin: Safe to continue (eGFR
+											&gt; 30)
+										</li>
+										<li>
+											• Monitor kidney function every 3-6
+											months
+										</li>
+										<li>
+											• Consider ACE inhibitor
+											optimization
+										</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					</div>
+				</CardContent>
+			</Card>
+
+			{/* Key Metrics Trend Analysis */}
+			<Card
+				onClick={() => onNavigate("lab-monitoring")}
+				className="bg-white shadow-lg mb-6 cursor-pointer hover:shadow-xl transition-shadow">
+				<CardHeader>
+					<CardTitle className="text-xl text-navy-600 flex items-center justify-between">
+						Key Metrics Trend Analysis
+						<ArrowRight className="h-4 w-4" />
+					</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						{/* HbA1c Trend */}
+						<div className="p-4 border rounded-lg">
+							<div className="flex items-center justify-between mb-3">
+								<h4 className="font-semibold text-gray-800">
+									HbA1c Trend (6 months)
+								</h4>
+								<span className="text-red-600 font-medium">
+									8.2%
 								</span>
 							</div>
-							<div className="text-sm text-gray-600 mb-2">
-								Target: 70-180 mg/dl | Average: 180 mg/dl
+							<div className="text-xs text-gray-600 mb-2">
+								Target: &lt;7.5% | Trend: ↗ Worsening
 							</div>
-							<div className="space-y-2">
-								<div className="flex items-center justify-between text-xs">
-									<span>Time in Range (70-180 mg/dl)</span>
-									<span>45%</span>
+							<div className="flex items-center space-x-2 text-xs">
+								<span className="bg-red-100 text-red-700 px-2 py-1 rounded">
+									Jan: 8.3%
+								</span>
+								<span>→</span>
+								<span className="bg-orange-100 text-orange-700 px-2 py-1 rounded">
+									Apr: 8.2%
+								</span>
+								<span>→</span>
+								<span className="bg-red-100 text-red-700 px-2 py-1 rounded">
+									Jul: 8.2%
+								</span>
+							</div>
+							<Progress
+								value={91}
+								className="h-2 mt-3"
+							/>
+							<div className="text-xs text-gray-500 mt-1">
+								91% to target
+							</div>
+						</div>
+
+						{/* Blood Pressure Trend */}
+						<div className="p-4 border rounded-lg">
+							<div className="flex items-center justify-between mb-3">
+								<h4 className="font-semibold text-gray-800">
+									BP Trend (30 days)
+								</h4>
+								<span className="text-green-600 font-medium">
+									130/84
+								</span>
+							</div>
+							<div className="text-xs text-gray-600 mb-2">
+								Target: &lt;130/80 mmHg | Trend: ↘ Improving
+							</div>
+							<div className="flex items-center space-x-2 text-xs">
+								<span className="bg-red-100 text-red-700 px-2 py-1 rounded">
+									140/90
+								</span>
+								<span>→</span>
+								<span className="bg-orange-100 text-orange-700 px-2 py-1 rounded">
+									135/88
+								</span>
+								<span>→</span>
+								<span className="bg-green-100 text-green-700 px-2 py-1 rounded">
+									130/84
+								</span>
+							</div>
+							<Progress
+								value={65}
+								className="h-2 mt-3"
+							/>
+							<div className="text-xs text-gray-500 mt-1">
+								65% time in range
+							</div>
+						</div>
+
+						{/* Glucose Trend (SMBG) */}
+						<div className="p-4 border rounded-lg">
+							<div className="flex items-center justify-between mb-3">
+								<h4 className="font-semibold text-gray-800">
+									SMBG Trend (14 days)
+								</h4>
+								<span className="text-orange-600 font-medium">
+									180 mg/dl
+								</span>
+							</div>
+							<div className="text-xs text-gray-600 mb-2">
+								Target: 70-180 mg/dl | Average: High-normal
+							</div>
+							<div className="space-y-1">
+								<div className="flex justify-between text-xs">
+									<span>Time in Range (70-180):</span>
+									<span className="font-medium">45%</span>
 								</div>
 								<Progress
 									value={45}
-									className="h-2"
-								/>
-								<div className="flex items-center justify-between text-xs">
-									<span>Time Below Range (&lt;70 mg/dl)</span>
-									<span>5%</span>
-								</div>
-								<Progress
-									value={5}
-									className="h-2 bg-red-100"
-								/>
-								<div className="flex items-center justify-between text-xs">
-									<span>
-										Time Above Range (&gt;180 mg/dl)
-									</span>
-									<span>50%</span>
-								</div>
-								<Progress
-									value={50}
-									className="h-2 bg-yellow-100"
+									className="h-1"
 								/>
 							</div>
 						</div>
 
-						{/* HbA1c Target Achievement */}
-						<div className="p-3 border rounded-lg">
-							<div className="flex items-center justify-between mb-2">
-								<span className="font-medium">
-									HbA1c Target
-								</span>
-								<span className="text-red-600">
-									Not Achieved
-								</span>
-							</div>
-							<div className="text-sm text-gray-600 mb-2">
-								Target: &lt;7.5% | Current: 8.2%
-							</div>
-							<div className="space-y-2">
-								<div className="flex items-center justify-between text-xs">
-									<span>Progress to Target</span>
-									<span>91%</span>
-								</div>
-								<Progress
-									value={91}
-									className="h-2"
-								/>
-							</div>
-						</div>
-
-						{/* LDL Target Achievement */}
-						<div className="p-3 border rounded-lg">
-							<div className="flex items-center justify-between mb-2">
-								<span className="font-medium">
-									LDL Target (High CV Risk)
-								</span>
-								<span className="text-orange-600">
-									Close to Target
+						{/* eGFR Trend */}
+						<div className="p-4 border rounded-lg">
+							<div className="flex items-center justify-between mb-3">
+								<h4 className="font-semibold text-gray-800">
+									eGFR Trend (1 year)
+								</h4>
+								<span className="text-orange-600 font-medium">
+									65
 								</span>
 							</div>
-							<div className="text-sm text-gray-600 mb-2">
-								Target: &lt;70 mg/dl | Current: 77 mg/dl
+							<div className="text-xs text-gray-600 mb-2">
+								Normal: &gt;90 ml/min/1.73m² | Trend: ↘
+								Declining
 							</div>
-							<div className="space-y-2">
-								<div className="flex items-center justify-between text-xs">
-									<span>Progress to Target</span>
-									<span>91%</span>
-								</div>
-								<Progress
-									value={91}
-									className="h-2"
-								/>
+							<div className="flex items-center space-x-2 text-xs">
+								<span className="bg-green-100 text-green-700 px-2 py-1 rounded">
+									72
+								</span>
+								<span>→</span>
+								<span className="bg-orange-100 text-orange-700 px-2 py-1 rounded">
+									68
+								</span>
+								<span>→</span>
+								<span className="bg-orange-100 text-orange-700 px-2 py-1 rounded">
+									65
+								</span>
+							</div>
+							<div className="text-xs text-orange-600 mt-2 font-medium">
+								⚠️ Monitor closely - Stage 2 CKD
 							</div>
 						</div>
 					</div>
@@ -1361,6 +1801,16 @@ export default function PatientOverviewEnhanced({
 										</div>
 										<div className="text-xs text-gray-500">
 											Last done: {organ.lastDone}
+										</div>
+										<div
+											className={`text-xs font-medium ${
+												organ.nextDue?.includes(
+													"Overdue"
+												)
+													? "text-red-600"
+													: "text-green-600"
+											}`}>
+											Next due: {organ.nextDue}
 										</div>
 									</div>
 									<Checkbox
