@@ -2,7 +2,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PatientOverviewEnhanced from "./patient-overview-enhanced";
-import MedicationsManagementComplete from "./medications-management-complete";
+import MedicationsManagementComplete from "./medications-enhanced";
 import LabMonitoringEnhanced from "./lab-monitoring-enhanced";
 import ComprehensiveAssessmentFunctional from "./comprehensive-assessment-functional";
 import LifestyleEnhanced from "./lifestyle-enhanced";
