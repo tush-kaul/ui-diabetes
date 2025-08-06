@@ -1,7 +1,7 @@
 {
 	"name": "CasaDoc Diabetes Management",
 	"short_name": "CasaDoc",
-	"description": "Comprehensive diabetes and hypertension patient management dashboard",
+	"description": "Comprehensive Diabetes and Hypertension Patient Management Dashboard",
 	"start_url": "/",
 	"display": "standalone",
 	"theme_color": "#ffffff",
