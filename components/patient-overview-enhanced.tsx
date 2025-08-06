@@ -217,6 +217,10 @@ export default function PatientOverviewEnhanced({
 			value: "Requires laser therapy",
 			lastDone: "October 2023",
 			nextDue: "January 2025",
+			recommendations: "Continue diabetes control, ophthalmology follow-up",
+			tests: ["Fundus Photography", "OCT", "Fluorescein Angiography"],
+			medications: ["Eye drops as prescribed"],
+			referrals: ["Ophthalmology"],
 		},
 		{
 			organ: "Nephropathy",
@@ -227,6 +231,10 @@ export default function PatientOverviewEnhanced({
 			value: "Mild CKD Stage 2-3a",
 			lastDone: "July 2024",
 			nextDue: "January 2025",
+			recommendations: "Monitor kidney function, ACE inhibitor optimization",
+			tests: ["Serum Creatinine", "Urine ACR", "Potassium"],
+			medications: ["Continue ACE inhibitor", "Monitor potassium"],
+			referrals: ["Nephrology if progression"],
 		},
 		{
 			organ: "IHD/HF",
@@ -237,6 +245,19 @@ export default function PatientOverviewEnhanced({
 			value: "ECG, ECHO, stress test needed",
 			lastDone: "Not assessed",
 			nextDue: "Overdue - Schedule ASAP",
+			recommendations: "⚠️ Assess for HF: BMI >30, obesity patients could have stage 1 HF without symptoms",
+			tests: ["ECG", "ECHO", "NT Pro BNP", "Trop I", "TMT", "Angiogram", "CT calcium scores", "Lipid profile"],
+			medications: ["Single/dual anti-platelet therapy", "Statin", "Beta blocker", "ACE i/ARBS/ARNI", "SGLT2 i", "MRA", "GLP-1 agonist"],
+			referrals: ["Cardiology"],
+			previousHistory: {
+				nstemi: false,
+				stemi: false,
+				hfref: false,
+				hfief: false,
+				hfpef: false,
+				pci: false,
+				cabg: false,
+			},
 		},
 		{
 			organ: "CVA/Stroke",
@@ -247,16 +268,33 @@ export default function PatientOverviewEnhanced({
 			value: "Clinical assessment pending",
 			lastDone: "Not assessed",
 			nextDue: "February 2025",
+			recommendations: "Screen for TIA symptoms, carotid assessment",
+			tests: ["Carotid/vertebral Doppler"],
+			medications: ["Statin", "SAPT/DAPT"],
+			referrals: ["Neurology", "Physiotherapy", "PMR"],
 		},
 		{
 			organ: "MASLD",
 			icon: Activity,
 			status: "not-done",
-			color: "text-orange-500",
-			finding: "Pending assessment",
-			value: "Liver ultrasound required",
+			color: "text-red-500",
+			finding: "⚠️ BMI >30: FIB-4 assessment required",
+			value: "Liver function test and ultrasound needed",
 			lastDone: "Not assessed",
-			nextDue: "March 2025",
+			nextDue: "Critical - Schedule ASAP",
+			recommendations: "⚠️ If BMI >30, FIB 4 score must be assessed. Critical alert for LFT and CBC/platelet count",
+			tests: ["FIB-4 Score (Age, AST, ALT, Platelet count)", "LFT", "CBC/Platelet count", "Ultrasound abdomen yearly"],
+			medications: ["DAPA", "GLP-1 agonist (to be considered)"],
+			referrals: ["Hepatology", "Dietician"],
+			fibScore: {
+				calculated: false,
+				components: {
+					age: 70,
+					ast: null,
+					alt: null,
+					platelets: null,
+				}
+			},
 		},
 		{
 			organ: "Diabetic Foot & Peripheral Assessment",
@@ -267,67 +305,311 @@ export default function PatientOverviewEnhanced({
 			value: "Good foot care, no neuropathy/PVD",
 			lastDone: "July 2024",
 			nextDue: "July 2025",
+			recommendations: "Continue foot care education, annual screening",
+			pvd: {
+				symptoms: "No intermittent claudication",
+				tests: ["ABI Doppler - normal"],
+				medications: ["Aspirin", "Statin"],
+			},
+			neuropathy: {
+				domain: "None affected",
+				tests: ["Vibration - normal", "Touch - normal", "Deep tendon reflex - normal"],
+				painfulOrPainless: "No neuropathy",
+				medications: [],
+			},
+			footSpecific: {
+				symptoms: "No symptoms",
+				footware: "Appropriate",
+				tests: ["Vitamin B12"],
+			},
+			referrals: ["Annual podiatry check"],
 		},
 	];
 
-	// Abnormal metrics for quick access (including non-key metrics)
-	const abnormalMetrics = [
+	// View mode state for categorized health metrics
+	const [healthMetricsView, setHealthMetricsView] = useState('summary'); // 'summary' or 'detailed'
+	
+	// Overview subtab state
+	const [overviewSubTab, setOverviewSubTab] = useState('compact'); // 'detailed' or 'compact'
+
+	// Categorized Health Metrics as per MD specifications
+	const healthMetricsCategories = {
+		abc: {
+			name: "ABC Metrics (Primary Targets)",
+			color: "text-blue-700",
+			metrics: [
+				{
+					name: "HbA1c",
+					value: "8.2%",
+					target: "<7.5%",
+					status: "high", // high, medium, good
+					color: "#ef4444", // red
+					lastUpdate: "08/07/2024",
+					trend: "up",
+					prevValue: "8.1%"
+				},
+				{
+					name: "BP Systolic",
+					value: "130 mmHg",
+					target: "<130 mmHg",
+					status: "good",
+					color: "#22c55e", // green
+					lastUpdate: "10/07/2024",
+					trend: "down",
+					prevValue: "140 mmHg"
+				},
+				{
+					name: "BP Diastolic",
+					value: "84 mmHg",
+					target: "<80 mmHg",
+					status: "medium",
+					color: "#eab308", // orange
+					lastUpdate: "10/07/2024",
+					trend: "down",
+					prevValue: "90 mmHg"
+				},
+				{
+					name: "LDL Cholesterol",
+					value: "77 mg/dl",
+					target: "<70 mg/dl",
+					status: "medium",
+					color: "#eab308", // orange
+					lastUpdate: "03/05/2024",
+					trend: "stable",
+					prevValue: "77 mg/dl"
+				}
+			]
+		},
+		others: {
+			name: "Other Key Metrics",
+			color: "text-purple-700",
+			metrics: [
+				{
+					name: "Weight",
+					value: "68 kg",
+					target: "Target range",
+					status: "medium",
+					color: "#eab308",
+					lastUpdate: "Current",
+					trend: "up",
+					prevValue: "66 kg"
+				},
+				{
+					name: "BMI",
+					value: "27 (pre-obese)",
+					target: "18.5-24.9",
+					status: "medium",
+					color: "#eab308",
+					lastUpdate: "Current",
+					trend: "up",
+					prevValue: "25.8"
+				},
+				{
+					name: "eGFR",
+					value: "65 ml/min/1.73m²",
+					target: ">90 ml/min/1.73m²",
+					status: "medium",
+					color: "#eab308",
+					lastUpdate: "Calculated",
+					trend: "down",
+					prevValue: "72 ml/min/1.73m²"
+				},
+				{
+					name: "Serum Creatinine",
+					value: "1.2 mg/dl",
+					target: "<1.1 mg/dl",
+					status: "medium",
+					color: "#eab308",
+					lastUpdate: "Recent",
+					trend: "up",
+					prevValue: "1.0 mg/dl"
+				},
+				{
+					name: "Urine ACR",
+					value: "45 mg/g",
+					target: "<30 mg/g",
+					status: "medium",
+					color: "#eab308",
+					lastUpdate: "Recent",
+					trend: "up",
+					prevValue: "32 mg/g"
+				},
+				{
+					name: "Hemoglobin",
+					value: "11.2 g/dl",
+					target: ">12 g/dl",
+					status: "high",
+					color: "#ef4444",
+					lastUpdate: "Recent",
+					trend: "down",
+					prevValue: "12.1 g/dl"
+				}
+			]
+		},
+		scores: {
+			name: "Clinical Scores & Risk Assessment",
+			color: "text-orange-700",
+			metrics: [
+				{
+					name: "ASCVD Risk",
+					value: "15.2%",
+					target: "<10%",
+					status: "high",
+					color: "#ef4444",
+					lastUpdate: "Calculated",
+					trend: "up",
+					prevValue: "12.8%"
+				},
+				{
+					name: "PHQ-9 (Depression)",
+					value: "8 (Mild)",
+					target: "<5",
+					status: "high",
+					color: "#ef4444",
+					lastUpdate: "Recent",
+					trend: "up",
+					prevValue: "5"
+				},
+				{
+					name: "GAD-7 (Anxiety)",
+					value: "6 (Mild)",
+					target: "<5",
+					status: "medium",
+					color: "#eab308",
+					lastUpdate: "Recent",
+					trend: "stable",
+					prevValue: "6"
+				}
+			]
+		}
+	};
+
+	// Get status color based on standardized system
+	const getStatusColor = (status: string) => {
+		switch(status) {
+			case 'good': return '#22c55e'; // Green
+			case 'medium': return '#eab308'; // Orange/Yellow
+			case 'high': return '#ef4444'; // Red
+			default: return '#6b7280'; // Gray
+		}
+	};
+
+	// Get trend icon
+	const getTrendIcon = (trend: string) => {
+		switch(trend) {
+			case 'up': return TrendingUp;
+			case 'down': return TrendingDown;
+			case 'stable': return Minus;
+			default: return Minus;
+		}
+	};
+
+	// Medication data with dosing frequency
+	const medicationCategories = [
 		{
-			name: "HbA1c",
-			value: "8.2%",
-			normal: "&lt;7.5%",
-			status: "High",
-			priority: "high",
+			condition: "Diabetes",
+			color: "text-blue-600",
+			medications: [
+				{
+					name: "Inj Novomix Penfill",
+					dose: "20-22/16-18 units",
+					frequency: "Twice daily",
+					timing: "10 min before meals",
+					status: "Active",
+					trend: "up"
+				},
+				{
+					name: "Tab Metformin + Glimepiride",
+					dose: "500mg/2mg",
+					frequency: "Twice daily",
+					timing: "After food",
+					status: "Active",
+					trend: "up"
+				},
+				{
+					name: "Tab Sitagliptin + Dapagliflozin",
+					dose: "100mg/10mg",
+					frequency: "Once daily",
+					timing: "Before food, 30 min",
+					status: "New",
+					trend: "new"
+				},
+				{
+					name: "Tab Voglibose",
+					dose: "0.2mg",
+					frequency: "Thrice daily",
+					timing: "With food",
+					status: "Active",
+					trend: "stable"
+				}
+			]
 		},
 		{
-			name: "ASCVD Risk",
-			value: "15.2%",
-			normal: "&lt;10%",
-			status: "High",
-			priority: "high",
+			condition: "Hypertension",
+			color: "text-purple-600",
+			medications: [
+				{
+					name: "Tab Losartan + Amlodipine",
+					dose: "50mg/5mg",
+					frequency: "Once daily",
+					timing: "After food",
+					status: "Active",
+					trend: "down"
+				}
+			]
 		},
 		{
-			name: "eGFR",
-			value: "65 ml/min/1.73m²",
-			normal: "&gt;90 ml/min/1.73m²",
-			status: "Mild decline",
-			priority: "high",
+			condition: "Cardioprotective",
+			color: "text-orange-600",
+			medications: [
+				{
+					name: "Tab Aspirin + Atorvastatin",
+					dose: "75mg/10mg",
+					frequency: "Once daily",
+					timing: "After food",
+					status: "Active",
+					trend: "stable"
+				}
+			]
 		},
 		{
-			name: "PHQ-9",
-			value: "8",
-			normal: "&lt;5",
-			status: "Mild Depression",
-			priority: "high",
-		},
-		{
-			name: "HDL",
-			value: "36 mg/dl",
-			normal: "&gt;40 mg/dl (M)",
-			status: "Low",
-			priority: "medium",
-		},
-		{
-			name: "Hemoglobin",
-			value: "11.2 g/dl",
-			normal: "&gt;12 g/dl",
-			status: "Low",
-			priority: "medium",
-		},
-		{
-			name: "Vitamin B12",
-			value: "180 pg/ml",
-			normal: "&gt;300 pg/ml",
-			status: "Low",
-			priority: "medium",
-		},
-		{
-			name: "Vitamin D",
-			value: "18 ng/ml",
-			normal: "&gt;30 ng/ml",
-			status: "Deficient",
-			priority: "medium",
-		},
+			condition: "Others",
+			color: "text-gray-600",
+			medications: [
+				{
+					name: "Tab Apremilast",
+					dose: "10mg",
+					frequency: "Previously twice daily",
+					timing: "(ineffective)",
+					status: "Stopped",
+					trend: "stopped"
+				},
+				{
+					name: "Cap Becosules (B-complex)",
+					dose: "1 cap",
+					frequency: "Once daily",
+					timing: "After food",
+					status: "Active",
+					trend: "stable"
+				},
+				{
+					name: "Oint Tacrolimus",
+					dose: "0.1%",
+					frequency: "Alternate days",
+					timing: "Topical application",
+					status: "Active",
+					trend: "stable"
+				},
+				{
+					name: "Oint Mometasone furoate",
+					dose: "1mg",
+					frequency: "Alternate days",
+					timing: "Topical application",
+					status: "Active",
+					trend: "stable"
+				}
+			]
+		}
 	];
 
 	const addDiagnosis = () => {
@@ -389,6 +671,199 @@ export default function PatientOverviewEnhanced({
 		}
 	};
 
+	// Compact View Render Function
+	const renderCompactView = () => (
+		<div className="space-y-4">
+			{/* Patient Info Card */}
+			<Card className="bg-white shadow-lg">
+				<CardHeader>
+					<CardTitle className="text-2xl flex items-center">
+						<User className="mr-2 h-6 w-6 text-navy-600" />
+						Mr X
+					</CardTitle>
+					<CardDescription className="text-lg">
+						70 years old | Male | OP: 12345, IP: 23456 | HbA1c poorly controlled, on insulin
+					</CardDescription>
+				</CardHeader>
+			</Card>
+
+			{/* Critical Alerts - Compact */}
+			<Card className="bg-red-50 shadow-md">
+				<CardHeader>
+					<CardTitle className="text-xl text-red-700 flex items-center">
+						<AlertTriangle className="mr-2 h-5 w-5" />
+						Critical Alerts (6)
+					</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+						<div className="flex items-center text-red-600">
+							<AlertTriangle className="h-3 w-3 mr-1" />
+							HbA1c: 8.2% (target &lt;7.5%)
+						</div>
+						<div className="flex items-center text-red-600">
+							<AlertTriangle className="h-3 w-3 mr-1" />
+							ASCVD risk: 15.2% (target &lt;10%)
+						</div>
+						<div className="flex items-center text-orange-600">
+							<AlertTriangle className="h-3 w-3 mr-1" />
+							Creatinine: 1.2 mg/dl
+						</div>
+						<div className="flex items-center text-orange-600">
+							<AlertTriangle className="h-3 w-3 mr-1" />
+							Urine ACR: 45 mg/g
+						</div>
+						<div className="flex items-center text-red-600">
+							<Eye className="h-3 w-3 mr-1" />
+							Ophthalmology overdue
+						</div>
+						<div className="flex items-center text-yellow-600">
+							<Activity className="h-3 w-3 mr-1" />
+							Hemoglobin: 11.2 g/dl
+						</div>
+					</div>
+				</CardContent>
+			</Card>
+
+			{/* Quick Stats Grid */}
+			<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+				{/* ABC Metrics */}
+				<Card className="bg-white shadow-md">
+					<CardHeader className="pb-2">
+						<CardTitle className="text-lg text-blue-600 flex items-center">
+							<Heart className="mr-2 h-4 w-4" />
+							ABC Metrics
+						</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<div className="space-y-2">
+							<div className="flex justify-between items-center">
+								<span className="text-sm">HbA1c:</span>
+								<span className="font-semibold text-red-600">8.2%</span>
+							</div>
+							<div className="flex justify-between items-center">
+								<span className="text-sm">BP:</span>
+								<span className="font-semibold text-green-600">130/84</span>
+							</div>
+							<div className="flex justify-between items-center">
+								<span className="text-sm">LDL:</span>
+								<span className="font-semibold text-orange-600">77 mg/dl</span>
+							</div>
+						</div>
+					</CardContent>
+				</Card>
+
+				{/* Key Organ Status */}
+				<Card className="bg-white shadow-md">
+					<CardHeader className="pb-2">
+						<CardTitle className="text-lg text-purple-600 flex items-center">
+							<Stethoscope className="mr-2 h-4 w-4" />
+							Organ Assessment
+						</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<div className="space-y-2">
+							<div className="flex justify-between items-center">
+								<span className="text-sm">Retinopathy:</span>
+								<Badge className="bg-red-100 text-red-800 text-xs">Moderate NPDR</Badge>
+							</div>
+							<div className="flex justify-between items-center">
+								<span className="text-sm">Nephropathy:</span>
+								<Badge className="bg-green-100 text-green-800 text-xs">Stage 2-3a CKD</Badge>
+							</div>
+							<div className="flex justify-between items-center">
+								<span className="text-sm">Cardiac:</span>
+								<Badge className="bg-orange-100 text-orange-800 text-xs">Pending</Badge>
+							</div>
+						</div>
+					</CardContent>
+				</Card>
+
+				{/* Current Medications Summary */}
+				<Card className="bg-white shadow-md">
+					<CardHeader className="pb-2">
+						<CardTitle className="text-lg text-green-600 flex items-center">
+							<Pill className="mr-2 h-4 w-4" />
+							Active Medications
+						</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<div className="space-y-1 text-sm">
+							<div>• Insulin (Novomix) - twice daily</div>
+							<div>• Metformin + Glimepiride</div>
+							<div>• Sitagliptin + Dapagliflozin (NEW)</div>
+							<div>• Losartan + Amlodipine</div>
+							<div>• Aspirin + Atorvastatin</div>
+							<div className="text-xs text-gray-500 mt-2">+ 4 others</div>
+						</div>
+					</CardContent>
+				</Card>
+			</div>
+
+			{/* Action Items */}
+			<Card className="bg-yellow-50 border-yellow-200 shadow-md">
+				<CardHeader>
+					<CardTitle className="text-lg text-yellow-700 flex items-center">
+						<AlertTriangle className="mr-2 h-4 w-4" />
+						Immediate Action Items
+					</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+						<div className="space-y-2">
+							<h5 className="font-semibold text-yellow-700">Clinical Priority:</h5>
+							<ul className="space-y-1 text-sm">
+								<li>• Schedule ophthalmology review (URGENT)</li>
+								<li>• Consider diabetes medication intensification</li>
+								<li>• Monitor kidney function closely</li>
+							</ul>
+						</div>
+						<div className="space-y-2">
+							<h5 className="font-semibold text-yellow-700">Patient Education:</h5>
+							<ul className="space-y-1 text-sm">
+								<li>• Improve SMBG adherence (2-3x daily)</li>
+								<li>• Continue BP home monitoring</li>
+								<li>• Lifestyle counseling for HbA1c control</li>
+							</ul>
+						</div>
+					</div>
+				</CardContent>
+			</Card>
+
+			{/* Quick Navigation */}
+			<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+				<Button 
+					onClick={() => onNavigate('medications')}
+					variant="outline" 
+					className="h-16 flex flex-col space-y-1">
+					<Pill className="h-5 w-5" />
+					<span className="text-xs">Medications</span>
+				</Button>
+				<Button 
+					onClick={() => onNavigate('lab-monitoring')}
+					variant="outline" 
+					className="h-16 flex flex-col space-y-1">
+					<FlaskConical className="h-5 w-5" />
+					<span className="text-xs">Lab Results</span>
+				</Button>
+				<Button 
+					onClick={() => onNavigate('assessment', 'complications')}
+					variant="outline" 
+					className="h-16 flex flex-col space-y-1">
+					<Stethoscope className="h-5 w-5" />
+					<span className="text-xs">Assessments</span>
+				</Button>
+				<Button 
+					onClick={() => onNavigate('lifestyle')}
+					variant="outline" 
+					className="h-16 flex flex-col space-y-1">
+					<Activity className="h-5 w-5" />
+					<span className="text-xs">Lifestyle</span>
+				</Button>
+			</div>
+		</div>
+	);
+
 	return (
 		<div className="p-4 sm:p-8 bg-gradient-to-br from-gray-50 to-gray-100">
 			<div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 space-y-4 lg:space-y-0">
@@ -397,6 +872,35 @@ export default function PatientOverviewEnhanced({
 				</h1>
 			</div>
 
+			{/* Overview Subtab Navigation */}
+			<div className="mb-6">
+				<div className="border-b border-gray-200">
+					<nav className="-mb-px flex space-x-8">
+						<button
+							onClick={() => setOverviewSubTab('compact')}
+							className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+								overviewSubTab === 'compact'
+									? 'border-blue-500 text-blue-600'
+									: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+							}`}>
+							Compact View
+						</button>
+						<button
+							onClick={() => setOverviewSubTab('detailed')}
+							className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+								overviewSubTab === 'detailed'
+									? 'border-blue-500 text-blue-600'
+									: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+							}`}>
+							Detailed View
+						</button>
+					</nav>
+				</div>
+			</div>
+
+			{/* Conditional Content Rendering */}
+			{overviewSubTab === 'compact' ? renderCompactView() : (
+			<>
 			<Card className="mb-6 bg-white shadow-lg">
 				<CardHeader>
 					<CardTitle className="text-2xl flex items-center">
@@ -739,7 +1243,7 @@ export default function PatientOverviewEnhanced({
 				</CardContent>
 			</Card>
 
-			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 				{/* Enhanced Diagnosis Section */}
 				<Card className="bg-white shadow-md">
 					<CardHeader>
@@ -883,133 +1387,89 @@ export default function PatientOverviewEnhanced({
 					</DialogContent>
 				</Dialog>
 
-				{/* Enhanced Key Health Metrics */}
-				<Card className="bg-white shadow-md">
+				{/* Categorized Health Metrics with Summary/Detailed View */}
+				<Card className="bg-white shadow-md col-span-2">
 					<CardHeader>
-						<CardTitle className="text-xl text-navy-600">
-							Key Health Metrics
+						<CardTitle className="text-xl text-navy-600 flex items-center justify-between">
+							Categorized Health Metrics
+							<div className="flex items-center space-x-2">
+								<Toggle
+									pressed={healthMetricsView === 'detailed'}
+									onPressedChange={() => setHealthMetricsView(healthMetricsView === 'summary' ? 'detailed' : 'summary')}
+									aria-label="Toggle health metrics view"
+									size="sm">
+									{healthMetricsView === 'summary' ? 'Detailed' : 'Summary'}
+								</Toggle>
+							</div>
 						</CardTitle>
+						<CardDescription>
+							Color coding: <span className="text-green-600 font-medium">Green (Good)</span>, <span className="text-yellow-600 font-medium">Orange (Caution)</span>, <span className="text-red-600 font-medium">Red (Action Needed)</span>
+						</CardDescription>
 					</CardHeader>
 					<CardContent>
-						<ul className="space-y-2">
-							<li className="flex items-center justify-between">
-								<span>Weight: 68 kg</span>
-								<div className="flex items-center">
-									<TrendingUp className="h-4 w-4 text-red-500 mr-1" />
-									<span className="text-xs text-gray-500">
-										vs 66 kg
-									</span>
+						<div className="space-y-6">
+							{Object.entries(healthMetricsCategories).map(([categoryKey, category]) => (
+								<div key={categoryKey} className="space-y-3">
+									<h4 className={`font-semibold ${category.color} text-lg flex items-center`}>
+										{categoryKey === 'abc' && <Heart className="h-5 w-5 mr-2" />}
+										{categoryKey === 'others' && <Activity className="h-5 w-5 mr-2" />}
+										{categoryKey === 'scores' && <BarChart3 className="h-5 w-5 mr-2" />}
+										{category.name}
+									</h4>
+									{healthMetricsView === 'summary' ? (
+										<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+											{category.metrics.map((metric, index) => {
+												const TrendIcon = getTrendIcon(metric.trend);
+												return (
+													<div key={index} className="flex items-center justify-between p-2 border rounded-lg">
+														<div className="flex-1">
+															<span className="font-medium" style={{ color: metric.color }}>
+																{metric.name}
+															</span>
+															<div className="text-sm font-semibold" style={{ color: metric.color }}>
+																{metric.value}
+															</div>
+														</div>
+														<div className="flex items-center space-x-1">
+															<TrendIcon className="h-3 w-3" style={{ color: metric.color }} />
+														</div>
+													</div>
+												);
+											})}
+										</div>
+									) : (
+										<div className="space-y-2">
+											{category.metrics.map((metric, index) => {
+												const TrendIcon = getTrendIcon(metric.trend);
+												return (
+													<div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+														<div className="flex-1">
+															<div className="flex items-center justify-between mb-1">
+																<span className="font-medium" style={{ color: metric.color }}>
+																	{metric.name}
+																</span>
+																<div className="flex items-center space-x-2">
+																	<TrendIcon className="h-4 w-4" style={{ color: metric.color }} />
+																	<span className="text-xs text-gray-500">
+																		vs {metric.prevValue}
+																	</span>
+																</div>
+															</div>
+															<div className="text-sm font-semibold mb-1" style={{ color: metric.color }}>
+																{metric.value} ({metric.lastUpdate})
+															</div>
+															<div className="text-xs text-gray-600">
+																Target: {metric.target}
+															</div>
+														</div>
+													</div>
+												);
+											})}
+										</div>
+									)}
 								</div>
-							</li>
-							<li className="flex items-center justify-between">
-								<span>BMI: 27 (pre-obese)</span>
-								<div className="flex items-center">
-									<TrendingUp className="h-4 w-4 text-red-500 mr-1" />
-									<span className="text-xs text-gray-500">
-										vs 25.8
-									</span>
-								</div>
-							</li>
-							<li className="flex items-center justify-between">
-								<span>BP: 130/84 mmHg (10/07/2024)</span>
-								<div className="flex items-center">
-									<TrendingDown className="h-4 w-4 text-green-500 mr-1" />
-									<span className="text-xs text-gray-500">
-										vs 140/90
-									</span>
-								</div>
-							</li>
-							<li className="text-red-500 font-semibold flex items-center justify-between">
-								<span>HbA1c: 8.2% (08/07/2024)</span>
-								<div className="flex items-center">
-									<TrendingUp className="h-4 w-4 text-red-500 mr-1" />
-									<span className="text-xs text-gray-500">
-										vs 7.5%
-									</span>
-								</div>
-							</li>
-							<li className="flex items-center justify-between">
-								<span>LDL: 77 mg/dl (03/05/2024)</span>
-								<div className="flex items-center">
-									<Minus className="h-4 w-4 text-gray-500 mr-1" />
-									<span className="text-xs text-gray-500">
-										stable
-									</span>
-								</div>
-							</li>
-							<li className="flex items-center justify-between">
-								<span>eGFR: 65 ml/min/1.73m² (calculated)</span>
-								<div className="flex items-center">
-									<TrendingDown className="h-4 w-4 text-orange-500 mr-1" />
-									<span className="text-xs text-gray-500">
-										vs 72 ml/min/1.73m²
-									</span>
-								</div>
-							</li>
-							<li className="text-orange-500 flex items-center justify-between">
-								<span>ASCVD Risk: 15.2%</span>
-								<div className="flex items-center">
-									<TrendingUp className="h-4 w-4 text-red-500 mr-1" />
-									<span className="text-xs text-gray-500">
-										vs 12.8%
-									</span>
-								</div>
-							</li>
-							<li className="text-yellow-500 flex items-center justify-between">
-								<span>Serum Creatinine: 1.2 mg/dl</span>
-								<div className="flex items-center">
-									<TrendingUp className="h-4 w-4 text-orange-500 mr-1" />
-									<span className="text-xs text-gray-500">
-										vs 1.0 mg/dl
-									</span>
-								</div>
-							</li>
-							<li className="text-yellow-500 flex items-center justify-between">
-								<span>Potassium: 4.8 mEq/L</span>
-								<div className="flex items-center">
-									<Minus className="h-4 w-4 text-gray-500 mr-1" />
-									<span className="text-xs text-gray-500">
-										stable
-									</span>
-								</div>
-							</li>
-							<li className="text-yellow-500 flex items-center justify-between">
-								<span>Urine ACR: 45 mg/g</span>
-								<div className="flex items-center">
-									<TrendingUp className="h-4 w-4 text-red-500 mr-1" />
-									<span className="text-xs text-gray-500">
-										vs 32 mg/g
-									</span>
-								</div>
-							</li>
-							<li className="text-yellow-500 flex items-center justify-between">
-								<span>Hb: 11.2 g/dl (Low)</span>
-								<div className="flex items-center">
-									<TrendingDown className="h-4 w-4 text-red-500 mr-1" />
-									<span className="text-xs text-gray-500">
-										vs 12.1 g/dl
-									</span>
-								</div>
-							</li>
-							<li className="text-red-500 flex items-center justify-between">
-								<span>PHQ-9: 8 (Mild Depression)</span>
-								<div className="flex items-center">
-									<TrendingUp className="h-4 w-4 text-red-500 mr-1" />
-									<span className="text-xs text-gray-500">
-										vs 5 (previous)
-									</span>
-								</div>
-							</li>
-							<li className="text-yellow-500 flex items-center justify-between">
-								<span>GAD-7: 6 (Mild Anxiety)</span>
-								<div className="flex items-center">
-									<Minus className="h-4 w-4 text-gray-500 mr-1" />
-									<span className="text-xs text-gray-500">
-										stable
-									</span>
-								</div>
-							</li>
-						</ul>
+							))}
+						</div>
 						<Dialog>
 							<DialogTrigger asChild>
 								<Button
@@ -1056,48 +1516,6 @@ export default function PatientOverviewEnhanced({
 					</CardContent>
 				</Card>
 
-				{/* Abnormal Metrics Alert */}
-				<Card className="bg-red-50 border-red-200 shadow-lg">
-					<CardHeader>
-						<CardTitle className="text-xl text-red-700 flex items-center">
-							<AlertTriangle className="mr-2 h-5 w-5" />
-							Abnormal Metrics - Immediate Attention Required
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-							{abnormalMetrics.map((metric, index) => (
-								<div
-									key={index}
-									className={`p-3 rounded-lg border ${
-										metric.priority === "high"
-											? "bg-red-100 border-red-300"
-											: "bg-yellow-100 border-yellow-300"
-									}`}>
-									<div className="flex items-center justify-between mb-1">
-										<span className="font-semibold">
-											{metric.name}
-										</span>
-										<span
-											className={`text-xs px-2 py-1 rounded ${
-												metric.priority === "high"
-													? "bg-red-200 text-red-800"
-													: "bg-yellow-200 text-yellow-800"
-											}`}>
-											{metric.priority.toUpperCase()}
-										</span>
-									</div>
-									<div className="text-lg font-bold">
-										{metric.value}
-									</div>
-									<div className="text-sm text-gray-600">
-										Normal: {metric.normal}
-									</div>
-								</div>
-							))}
-						</div>
-					</CardContent>
-				</Card>
 			</div>
 
 			<div className="w-full border-t border-gray-200 pt-4 gap-[5%]">
@@ -1768,7 +2186,7 @@ export default function PatientOverviewEnhanced({
 
 			{/* Target Organ Assessment */}
 			<Card
-				onClick={() => onNavigate("assessment")}
+				onClick={() => onNavigate("assessment", "complications")}
 				className="bg-white shadow-lg mb-6 cursor-pointer hover:shadow-xl transition-shadow">
 				<CardHeader>
 					<CardTitle className="text-xl text-navy-600 flex items-center justify-between">
@@ -1780,10 +2198,33 @@ export default function PatientOverviewEnhanced({
 					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 						{organAssessment.map((organ, index) => {
 							const IconComponent = organ.icon;
+							const getSubTabId = (organName: string) => {
+								switch (organName) {
+									case "Retinopathy":
+										return "retinopathy";
+									case "Nephropathy":
+										return "nephropathy";
+									case "IHD/HF":
+										return "cardiac";
+									case "CVA/Stroke":
+										return "neuro";
+									case "MASLD":
+										return "liver";
+									case "Diabetic Foot & Peripheral Assessment":
+										return "foot";
+									default:
+										return undefined;
+								}
+							};
+
 							return (
 								<div
 									key={index}
-									onClick={() => onNavigate("assessment")}
+									onClick={(e) => {
+										e.stopPropagation(); // Prevent card-level click
+										const subTabId = getSubTabId(organ.organ);
+										onNavigate("assessment", subTabId);
+									}}
 									className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 hover:shadow-md transition-all duration-200">
 									<IconComponent
 										className={`h-6 w-6 ${organ.color}`}
@@ -1799,19 +2240,30 @@ export default function PatientOverviewEnhanced({
 										<div className="text-xs text-blue-600">
 											{organ.value}
 										</div>
-										<div className="text-xs text-gray-500">
+										{organ.recommendations && (
+											<div className="text-xs text-purple-600 mt-1 font-medium">
+												💡 {organ.recommendations}
+											</div>
+										)}
+										<div className="text-xs text-gray-500 mt-1">
 											Last done: {organ.lastDone}
 										</div>
 										<div
 											className={`text-xs font-medium ${
 												organ.nextDue?.includes(
 													"Overdue"
-												)
+												) || organ.nextDue?.includes("Critical")
 													? "text-red-600"
 													: "text-green-600"
 											}`}>
 											Next due: {organ.nextDue}
 										</div>
+										{organ.tests && organ.tests.length > 0 && (
+											<div className="text-xs text-gray-600 mt-1">
+												<span className="font-medium">Tests needed:</span> {organ.tests.slice(0, 2).join(", ")}
+												{organ.tests.length > 2 && "..."}
+											</div>
+										)}
 									</div>
 									<Checkbox
 										checked={organ.status !== "not-done"}
@@ -2113,6 +2565,8 @@ export default function PatientOverviewEnhanced({
 					</div>
 				</CardContent>
 			</Card>
+			</>
+			)}
 		</div>
 	);
 }

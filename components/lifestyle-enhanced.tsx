@@ -94,8 +94,7 @@ export default function LifestyleEnhanced() {
 				<Button
 					onClick={() => setIsEditing(!isEditing)}
 					variant={isEditing ? "default" : "outline"}
-					className="flex items-center gap-2"
-				>
+					className="flex items-center gap-2">
 					{isEditing ? (
 						<Save className="h-4 w-4" />
 					) : (
@@ -169,8 +168,7 @@ export default function LifestyleEnhanced() {
 										habits.smoking === "never"
 											? "default"
 											: "destructive"
-									}
-								>
+									}>
 									{habits.smoking}
 								</Badge>
 							</div>
@@ -181,8 +179,7 @@ export default function LifestyleEnhanced() {
 										habits.alcohol === "none"
 											? "default"
 											: "secondary"
-									}
-								>
+									}>
 									{habits.alcohol}
 								</Badge>
 							</div>
@@ -243,8 +240,7 @@ export default function LifestyleEnhanced() {
 										/>
 										<Label
 											htmlFor="highFiber"
-											className="flex items-center"
-										>
+											className="flex items-center">
 											High fiber diet (25-30g/day)
 											{!dietChecklist.highFiber && (
 												<AlertTriangle className="ml-2 h-4 w-4 text-red-500" />
@@ -268,8 +264,7 @@ export default function LifestyleEnhanced() {
 										/>
 										<Label
 											htmlFor="complexGrains"
-											className="flex items-center"
-										>
+											className="flex items-center">
 											Complex grains (brown rice, whole
 											wheat)
 											{!dietChecklist.complexGrains && (
@@ -294,8 +289,7 @@ export default function LifestyleEnhanced() {
 										/>
 										<Label
 											htmlFor="portionControl"
-											className="flex items-center"
-										>
+											className="flex items-center">
 											Portion size as food plate principle
 											{dietChecklist.portionControl && (
 												<CheckCircle className="ml-2 h-4 w-4 text-green-500" />
@@ -319,8 +313,7 @@ export default function LifestyleEnhanced() {
 										/>
 										<Label
 											htmlFor="fruitsVegetables"
-											className="flex items-center"
-										>
+											className="flex items-center">
 											4-5 servings of fruits and
 											vegetables daily
 											{!dietChecklist.fruitsVegetables && (
@@ -343,8 +336,7 @@ export default function LifestyleEnhanced() {
 										/>
 										<Label
 											htmlFor="mealTiming"
-											className="flex items-center"
-										>
+											className="flex items-center">
 											Appropriate timing of meals and
 											snacks
 											{dietChecklist.mealTiming && (
@@ -583,8 +575,7 @@ export default function LifestyleEnhanced() {
 													) >= 8000
 														? "default"
 														: "destructive"
-												}
-											>
+												}>
 												{Number.parseInt(
 													physicalActivity.stepCount
 												) >= 8000
@@ -601,8 +592,7 @@ export default function LifestyleEnhanced() {
 													) >= 3
 														? "default"
 														: "destructive"
-												}
-											>
+												}>
 												{Number.parseInt(
 													physicalActivity.aerobicActivity
 												) >= 3
@@ -619,8 +609,7 @@ export default function LifestyleEnhanced() {
 													) >= 2
 														? "default"
 														: "destructive"
-												}
-											>
+												}>
 												{Number.parseInt(
 													physicalActivity.strengthTraining
 												) >= 2
@@ -700,6 +689,7 @@ export default function LifestyleEnhanced() {
 									<div>
 										<Label>Smoking Status:</Label>
 										<select
+											aria-label="Smoking Status"
 											className="w-full mt-1 p-2 border rounded"
 											value={habits.smoking}
 											onChange={(e) =>
@@ -707,8 +697,7 @@ export default function LifestyleEnhanced() {
 													...prev,
 													smoking: e.target.value,
 												}))
-											}
-										>
+											}>
 											<option value="never">Never</option>
 											<option value="former">
 												Former smoker
@@ -721,6 +710,7 @@ export default function LifestyleEnhanced() {
 									<div>
 										<Label>Alcohol Use:</Label>
 										<select
+											aria-label="Alcohol Use"
 											className="w-full mt-1 p-2 border rounded"
 											value={habits.alcohol}
 											onChange={(e) =>
@@ -728,8 +718,7 @@ export default function LifestyleEnhanced() {
 													...prev,
 													alcohol: e.target.value,
 												}))
-											}
-										>
+											}>
 											<option value="none">None</option>
 											<option value="occasional">
 												Occasional
@@ -743,6 +732,7 @@ export default function LifestyleEnhanced() {
 									<div>
 										<Label>Substance Abuse:</Label>
 										<select
+											aria-label="Substance Abuse"
 											className="w-full mt-1 p-2 border rounded"
 											value={habits.substanceAbuse}
 											onChange={(e) =>
@@ -751,8 +741,7 @@ export default function LifestyleEnhanced() {
 													substanceAbuse:
 														e.target.value,
 												}))
-											}
-										>
+											}>
 											<option value="none">None</option>
 											<option value="marijuana">
 												Marijuana
@@ -796,8 +785,7 @@ export default function LifestyleEnhanced() {
 													) <= 4
 														? "default"
 														: "destructive"
-												}
-											>
+												}>
 												{Number.parseInt(
 													stressManagement.level
 												) <= 4
@@ -828,8 +816,7 @@ export default function LifestyleEnhanced() {
 													<Badge
 														key={index}
 														variant="outline"
-														className="capitalize"
-													>
+														className="capitalize">
 														{technique.replace(
 															"-",
 															" "

@@ -2,7 +2,6 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PatientOverviewEnhanced from "./patient-overview-enhanced";
-import MedicationsManagementComplete from "./medications-management-complete";
 import LabMonitoringEnhanced from "./lab-monitoring-enhanced";
 import LifestyleEnhanced from "./lifestyle-enhanced";
 import AdherenceCommunication from "./adherence-communication";
@@ -20,14 +19,14 @@ import {
 	User,
 } from "lucide-react";
 import MedicationsEnhanced from "./medications-enhanced";
-import { Badge } from "./components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "./components/ui/avatar";
+import { Badge } from "./ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "./components/ui/tooltip";
+} from "./ui/tooltip";
 import ComprehensiveAssessmentFunctional from "./comprehensive-assessment-functional";
 
 export default function PatientDashboardMain() {
@@ -117,7 +116,9 @@ export default function PatientDashboardMain() {
 			case "lab-monitoring":
 				return <LabMonitoringEnhanced />;
 			case "assessment":
-				return <ComprehensiveAssessmentFunctional />;
+				return (
+					<ComprehensiveAssessmentFunctional initialSubTab={subTab} />
+				);
 			case "lifestyle":
 				return <LifestyleEnhanced />;
 			case "communication":

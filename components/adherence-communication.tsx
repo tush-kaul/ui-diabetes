@@ -126,8 +126,7 @@ export default function AdherenceCommunication({
 				return (
 					<Badge
 						variant="default"
-						className="bg-green-100 text-green-800"
-					>
+						className="bg-green-100 text-green-800">
 						Accepted
 					</Badge>
 				);
@@ -733,8 +732,7 @@ Dr. Michael Chen`,
 					<Toggle
 						pressed={!isChart}
 						onPressedChange={() => toggleViewMode("adherence")}
-						aria-label="Toggle adherence view"
-					>
+						aria-label="Toggle adherence view">
 						{isChart ? (
 							<Table className="h-4 w-4" />
 						) : (
@@ -748,8 +746,7 @@ Dr. Michael Chen`,
 						<ResponsiveContainer
 							width="100%"
 							height={250}
-							className="mt-4 -ml-4 sm:ml-0"
-						>
+							className="mt-4 -ml-4 sm:ml-0">
 							<LineChart
 								data={adherenceData}
 								margin={{
@@ -757,8 +754,7 @@ Dr. Michael Chen`,
 									right: 5,
 									left: -20,
 									bottom: 5,
-								}}
-							>
+								}}>
 								<CartesianGrid strokeDasharray="3 3" />
 								<XAxis dataKey="date" />
 								<YAxis domain={[70, 100]} />
@@ -903,8 +899,7 @@ Dr. Michael Chen`,
 								{adherenceData.map((item, index) => (
 									<tr
 										key={index}
-										className="border-t"
-									>
+										className="border-t">
 										<td className="p-3">{item.date}</td>
 										<td className="p-3 font-semibold">
 											<span
@@ -915,8 +910,7 @@ Dr. Michael Chen`,
 															: item.overall >= 80
 															? "#eab308"
 															: "#ef4444",
-												}}
-											>
+												}}>
 												{item.overall}%
 											</span>
 										</td>
@@ -937,8 +931,7 @@ Dr. Michael Chen`,
 														: item.overall >= 80
 														? "secondary"
 														: "destructive"
-												}
-											>
+												}>
 												{item.overall >= 90
 													? "Excellent"
 													: item.overall >= 80
@@ -968,8 +961,7 @@ Dr. Michael Chen`,
 					<Toggle
 						pressed={!isChart}
 						onPressedChange={() => toggleViewMode("goals")}
-						aria-label="Toggle goals view"
-					>
+						aria-label="Toggle goals view">
 						{isChart ? (
 							<Table className="h-4 w-4" />
 						) : (
@@ -982,8 +974,7 @@ Dr. Michael Chen`,
 					<>
 						<ResponsiveContainer
 							width="100%"
-							height={300}
-						>
+							height={300}>
 							<LineChart data={goalData}>
 								<CartesianGrid strokeDasharray="3 3" />
 								<XAxis dataKey="date" />
@@ -1109,8 +1100,7 @@ Dr. Michael Chen`,
 									return (
 										<tr
 											key={index}
-											className="border-t"
-										>
+											className="border-t">
 											<td className="p-3">{item.date}</td>
 											<td className="p-3">
 												{item.hba1c}%
@@ -1128,8 +1118,7 @@ Dr. Michael Chen`,
 															: average >= 85
 															? "secondary"
 															: "destructive"
-													}
-												>
+													}>
 													{average >= 95
 														? "Target Achieved"
 														: average >= 85
@@ -1156,31 +1145,26 @@ Dr. Michael Chen`,
 
 			<Tabs
 				defaultValue={initialSubTab || "adherence"}
-				className="w-full space-y-2 sm:space-y-0"
-			>
+				className="w-full space-y-2 sm:space-y-0">
 				<TabsList className="mb-4 flex flex-wrap gap-2">
 					<TabsTrigger
 						value="adherence"
-						className="text-xs sm:text-sm"
-					>
+						className="text-xs sm:text-sm">
 						Adherence
 					</TabsTrigger>
 					<TabsTrigger
 						value="goals"
-						className="text-xs sm:text-sm"
-					>
+						className="text-xs sm:text-sm">
 						Goals
 					</TabsTrigger>
 					<TabsTrigger
 						value="communication"
-						className="text-xs sm:text-sm"
-					>
+						className="text-xs sm:text-sm">
 						Communication
 					</TabsTrigger>
 					<TabsTrigger
 						value="recommendations"
-						className="text-xs sm:text-sm"
-					>
+						className="text-xs sm:text-sm">
 						AI Insights
 					</TabsTrigger>
 				</TabsList>
@@ -1209,8 +1193,7 @@ Dr. Michael Chen`,
 									{targetGoals.map((goal, index) => (
 										<div
 											key={index}
-											className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 border rounded-lg"
-										>
+											className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 border rounded-lg">
 											<div className="flex-1 w-full">
 												<div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2">
 													<span className="font-medium text-sm sm:text-base">
@@ -1226,8 +1209,7 @@ Dr. Michael Chen`,
 																	  "medium"
 																	? "secondary"
 																	: "default"
-															}
-														>
+															}>
 															{goal.priority.toUpperCase()}
 														</Badge>
 														<span
@@ -1235,8 +1217,7 @@ Dr. Michael Chen`,
 																goal.achieved
 																	? "text-green-600"
 																	: "text-red-600"
-															}
-														>
+															}>
 															{goal.achieved
 																? "Achieved"
 																: "Not Achieved"}
@@ -1299,8 +1280,7 @@ Dr. Michael Chen`,
 									</div>
 									<Button
 										size="sm"
-										className="mt-3 w-full"
-									>
+										className="mt-3 w-full">
 										<MessageSquare className="h-4 w-4 mr-2" />
 										Send Message
 									</Button>
@@ -1323,8 +1303,7 @@ Dr. Michael Chen`,
 									</div>
 									<Button
 										size="sm"
-										className="mt-3 w-full"
-									>
+										className="mt-3 w-full">
 										<Phone className="h-4 w-4 mr-2" />
 										Schedule Call
 									</Button>
@@ -1347,8 +1326,7 @@ Dr. Michael Chen`,
 									</div>
 									<Button
 										size="sm"
-										className="mt-3 w-full"
-									>
+										className="mt-3 w-full">
 										<Calendar className="h-4 w-4 mr-2" />
 										Book Appointment
 									</Button>
@@ -1412,8 +1390,7 @@ Dr. Michael Chen`,
 										</Button>
 										<Button
 											variant="outline"
-											className="flex-1 bg-transparent"
-										>
+											className="flex-1 bg-transparent">
 											<MessageSquare className="h-4 w-4 mr-2" />
 											Send SMS
 										</Button>
@@ -1473,8 +1450,7 @@ Dr. Michael Chen`,
 													recommendationStatus[
 														"hba1c-control"
 													] !== "pending"
-												}
-											>
+												}>
 												<Check className="h-4 w-4 mr-1" />
 												Accept
 											</Button>
@@ -1491,8 +1467,7 @@ Dr. Michael Chen`,
 													recommendationStatus[
 														"hba1c-control"
 													] !== "pending"
-												}
-											>
+												}>
 												<Edit className="h-4 w-4 mr-1" />
 												Modify
 											</Button>
@@ -1509,8 +1484,7 @@ Dr. Michael Chen`,
 													recommendationStatus[
 														"hba1c-control"
 													] !== "pending"
-												}
-											>
+												}>
 												<X className="h-4 w-4 mr-1" />
 												Reject
 											</Button>
@@ -1556,8 +1530,7 @@ Dr. Michael Chen`,
 													recommendationStatus[
 														"weight-management"
 													] !== "pending"
-												}
-											>
+												}>
 												<Check className="h-4 w-4 mr-1" />
 												Accept
 											</Button>
@@ -1574,8 +1547,7 @@ Dr. Michael Chen`,
 													recommendationStatus[
 														"weight-management"
 													] !== "pending"
-												}
-											>
+												}>
 												<Edit className="h-4 w-4 mr-1" />
 												Modify
 											</Button>
@@ -1592,8 +1564,7 @@ Dr. Michael Chen`,
 													recommendationStatus[
 														"weight-management"
 													] !== "pending"
-												}
-											>
+												}>
 												<X className="h-4 w-4 mr-1" />
 												Reject
 											</Button>
@@ -1638,8 +1609,7 @@ Dr. Michael Chen`,
 													recommendationStatus[
 														"exercise-enhancement"
 													] !== "pending"
-												}
-											>
+												}>
 												<Check className="h-4 w-4 mr-1" />
 												Accept
 											</Button>
@@ -1656,8 +1626,7 @@ Dr. Michael Chen`,
 													recommendationStatus[
 														"exercise-enhancement"
 													] !== "pending"
-												}
-											>
+												}>
 												<Edit className="h-4 w-4 mr-1" />
 												Modify
 											</Button>
@@ -1674,8 +1643,7 @@ Dr. Michael Chen`,
 													recommendationStatus[
 														"exercise-enhancement"
 													] !== "pending"
-												}
-											>
+												}>
 												<X className="h-4 w-4 mr-1" />
 												Reject
 											</Button>
@@ -1703,8 +1671,7 @@ Dr. Michael Chen`,
 									].map((education, index) => (
 										<div
 											key={index}
-											className="flex items-center justify-between p-3 border rounded-lg"
-										>
+											className="flex items-center justify-between p-3 border rounded-lg">
 											<span className="text-sm">
 												{education}
 											</span>
@@ -1719,8 +1686,7 @@ Dr. Michael Chen`,
 														setShowEducationDialog(
 															true
 														);
-													}}
-												>
+													}}>
 													<Eye className="h-4 w-4 mr-2" />
 													View
 												</Button>
@@ -1734,8 +1700,7 @@ Dr. Michael Chen`,
 															].whatsapp,
 															`whatsapp-${index}`
 														)
-													}
-												>
+													}>
 													{copiedText ===
 													`whatsapp-${index}` ? (
 														<Check className="h-4 w-4 mr-2" />
@@ -1781,8 +1746,7 @@ Dr. Michael Chen`,
 											className="mt-1"
 											onClick={() =>
 												setShowReferralDialog(true)
-											}
-										>
+											}>
 											<Eye className="h-4 w-4 mr-2" />
 											View Referral
 										</Button>
@@ -1795,8 +1759,7 @@ Dr. Michael Chen`,
 													referralTemplate,
 													"referral"
 												)
-											}
-										>
+											}>
 											{copiedText === "referral" ? (
 												<Check className="h-4 w-4 mr-2" />
 											) : (
@@ -1809,8 +1772,7 @@ Dr. Michael Chen`,
 										<Button
 											size="sm"
 											variant="outline"
-											className="mt-1"
-										>
+											className="mt-1">
 											<Download className="h-4 w-4 mr-2" />
 											Download
 										</Button>
@@ -1831,8 +1793,7 @@ Dr. Michael Chen`,
 											className="mt-1"
 											onClick={() =>
 												setShowDietDialog(true)
-											}
-										>
+											}>
 											<Eye className="h-4 w-4 mr-2" />
 											View Diet Plan
 										</Button>
@@ -1845,8 +1806,7 @@ Dr. Michael Chen`,
 													dietChartTemplate,
 													"diet"
 												)
-											}
-										>
+											}>
 											{copiedText === "diet" ? (
 												<Check className="h-4 w-4 mr-2" />
 											) : (
@@ -1859,8 +1819,7 @@ Dr. Michael Chen`,
 										<Button
 											size="sm"
 											variant="outline"
-											className="mt-1"
-										>
+											className="mt-1">
 											<Printer className="h-4 w-4 mr-2" />
 											Print
 										</Button>
@@ -1873,8 +1832,7 @@ Dr. Michael Chen`,
 					{/* Referral Dialog */}
 					<Dialog
 						open={showReferralDialog}
-						onOpenChange={setShowReferralDialog}
-					>
+						onOpenChange={setShowReferralDialog}>
 						<DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
 							<DialogHeader>
 								<DialogTitle>
@@ -1895,8 +1853,7 @@ Dr. Michael Chen`,
 												referralTemplate,
 												"referral-dialog"
 											)
-										}
-									>
+										}>
 										{copiedText === "referral-dialog" ? (
 											<Check className="h-4 w-4 mr-2" />
 										) : (
@@ -1918,8 +1875,7 @@ Dr. Michael Chen`,
 					{/* Diet Plan Dialog */}
 					<Dialog
 						open={showDietDialog}
-						onOpenChange={setShowDietDialog}
-					>
+						onOpenChange={setShowDietDialog}>
 						<DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
 							<DialogHeader>
 								<DialogTitle>
@@ -1940,8 +1896,7 @@ Dr. Michael Chen`,
 												dietChartTemplate,
 												"diet-dialog"
 											)
-										}
-									>
+										}>
 										{copiedText === "diet-dialog" ? (
 											<Check className="h-4 w-4 mr-2" />
 										) : (
@@ -1963,8 +1918,7 @@ Dr. Michael Chen`,
 					{/* Education Dialog */}
 					<Dialog
 						open={showEducationDialog}
-						onOpenChange={setShowEducationDialog}
-					>
+						onOpenChange={setShowEducationDialog}>
 						<DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
 							<DialogHeader>
 								<DialogTitle>
@@ -1995,8 +1949,7 @@ Dr. Michael Chen`,
 													"",
 												"education"
 											)
-										}
-									>
+										}>
 										{copiedText === "education" ? (
 											<Check className="h-4 w-4 mr-2" />
 										) : (
@@ -2017,8 +1970,7 @@ Dr. Michael Chen`,
 													"",
 												"education-whatsapp"
 											)
-										}
-									>
+										}>
 										{copiedText === "education-whatsapp" ? (
 											<Check className="h-4 w-4 mr-2" />
 										) : (
