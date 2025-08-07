@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'
 
-// Patient Table Schema 
+// Patient Model 
 const patientSchema = new mongoose.Schema({
   name: {
     type: String,
