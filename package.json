@@ -45,6 +45,8 @@
     "geist": "latest",
     "input-otp": "latest",
     "lucide-react": "^0.454.0",
+    "mongodb": "^6.18.0",
+    "mongoose": "^8.17.0",
     "next": "15.2.4",
     "next-themes": "latest",
     "react": "^19",
@@ -59,13 +61,11 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@prisma/client": "^6.13.0",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.5",
-    "prisma": "^6.13.0",
     "tailwindcss": "^3",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5"
