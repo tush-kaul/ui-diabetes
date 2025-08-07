@@ -54,7 +54,7 @@ const hbA1cSchema = new mongoose.Schema({
   },
   zone: {                                                                 // In the dashboard, mention not REQUIRED, doctor can add classification themselves
     type: String,                                                         // Doctor's insights >> Helper functions
-    required: true,
+    required: false,                                                      // OPTIONAL; if doctor enters value, no matter what system thinks Doctor >> System
     enum: {
       values: ['low', 'optimal', 'high'],
       message: 'Zone must be one of: low, optimal, high'
@@ -63,7 +63,7 @@ const hbA1cSchema = new mongoose.Schema({
   },
   alertLevel: {                                                           // Same as "zone"
     type: String,
-    required: true,
+    required: false,
     enum: {
       values: ['none', 'cautionary', 'critical'],
       message: 'Alert level must be one of: none, cautionary, critical'
@@ -154,7 +154,7 @@ else if (doctorProvidedZone && this.zone && !doctorProvidedAlertLevel) {
 // Case 3: Doctor provided alertLevel only → calculate zone using doctor's alertLevel
 else if (doctorProvidedAlertLevel && this.alertLevel && !doctorProvidedZone) {
   this.zone = getZoneForAlertLevel(this.alertLevel, value)
-  console.log(`👨‍⚕️ Doctor provided alertLevel: ${this.alertLevel}, system calculated zone: ${this.zone}`)
+  console.log(`Doctor provided alertLevel: ${this.alertLevel}, system calculated zone: ${this.zone}`)
 }
 
 // Case 4: No doctor input → use of helper function to calculate both zone and alertLevel
