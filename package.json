@@ -6,7 +6,12 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "seed": "pnpm dlx tsx scripts/seed-mongodb.ts",
+    "test-db": "pnpm dlx tsx test-mongodb.ts",
+    "db:reset": "pnpm dlx tsx scripts/seed-mongodb.ts",
+    "db:check": "pnpm dlx tsx test-mongodb.ts",
+    "db:seed": "pnpm dlx tsx scripts/seed-mongodb.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -41,6 +46,7 @@
     "clsx": "^2.1.1",
     "cmdk": "latest",
     "date-fns": "4.1.0",
+    "dotenv": "^17.2.1",
     "embla-carousel-react": "latest",
     "geist": "latest",
     "input-otp": "latest",
@@ -49,6 +55,7 @@
     "mongoose": "^8.17.0",
     "next": "15.2.4",
     "next-themes": "latest",
+    "path": "^0.12.7",
     "react": "^19",
     "react-day-picker": "latest",
     "react-dom": "^19",
