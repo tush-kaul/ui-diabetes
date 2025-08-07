@@ -126,6 +126,62 @@ export default function ComprehensiveAssessmentFunctional({
 		Record<string, string>
 	>({});
 
+	// FIB-4 Calculation State
+	const [inputs, setInputs] = useState({
+		age: "",
+		ast: "",
+		alt: "",
+		plateletCount: "",
+	});
+
+	const [result, setResult] = useState<number | null>(null);
+	const [interpretation, setInterpretation] = useState<
+		"Low Risk" | "Intermediate Risk" | "High Risk" | ""
+	>("");
+
+	const handleChange = (field: keyof typeof inputs, value: string) => {
+		// allow only digits and optional decimal
+		if (/^\d*(\.\d*)?$/.test(value)) {
+			setInputs((prev) => ({ ...prev, [field]: value }));
+		}
+	};
+
+	const calculateFib4 = () => {
+		const ageNum = parseFloat(inputs.age);
+		const astNum = parseFloat(inputs.ast);
+		const altNum = parseFloat(inputs.alt);
+		const pltNum = parseFloat(inputs.plateletCount);
+
+		if (
+			isNaN(ageNum) ||
+			isNaN(astNum) ||
+			isNaN(altNum) ||
+			isNaN(pltNum) ||
+			ageNum <= 0 ||
+			astNum <= 0 ||
+			altNum <= 0 ||
+			pltNum <= 0
+		) {
+			setResult(null);
+			setInterpretation("");
+			return;
+		}
+
+		const score = (ageNum * astNum) / (pltNum * Math.sqrt(altNum));
+		setResult(score);
+		if (score > 3.25) setInterpretation("High Risk");
+		else if (score >= 1.45) setInterpretation("Intermediate Risk");
+		else setInterpretation("Low Risk");
+	};
+
+	// map interpretation to color classes
+	const colorMap: Record<string, string> = {
+		"Low Risk": "text-green-700 bg-green-100",
+		"Intermediate Risk": "text-yellow-800 bg-yellow-100",
+		"High Risk": "text-red-700 bg-red-100",
+		"": "text-gray-500 bg-gray-50",
+	};
+
 	// Drawing canvas refs
 	const canvasRefs = useRef<Record<string, HTMLCanvasElement | null>>({});
 	const [isDrawing, setIsDrawing] = useState(false);
@@ -6575,63 +6631,132 @@ export default function ComprehensiveAssessmentFunctional({
 											</CardTitle>
 										</CardHeader>
 										<CardContent>
-											<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+											<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+												{/* Age */}
+												<div>
+													<Label className="text-sm font-medium">
+														Age (years)
+													</Label>
+													<Input
+														type="text"
+														placeholder="e.g. 45"
+														value={inputs.age}
+														onChange={(e) =>
+															handleChange(
+																"age",
+																e.target.value
+															)
+														}
+													/>
+												</div>
+												{/* AST */}
 												<div>
 													<Label className="text-sm font-medium">
 														AST (IU/L)
 													</Label>
 													<Input
-														className="mt-2"
-														type="number"
-														placeholder="AST value"
+														type="text"
+														placeholder="e.g. 30"
+														value={inputs.ast}
+														onChange={(e) =>
+															handleChange(
+																"ast",
+																e.target.value
+															)
+														}
 													/>
 												</div>
+												{/* ALT */}
 												<div>
 													<Label className="text-sm font-medium">
 														ALT (IU/L)
 													</Label>
 													<Input
-														className="mt-2"
-														type="number"
-														placeholder="ALT value"
+														type="text"
+														placeholder="e.g. 28"
+														value={inputs.alt}
+														onChange={(e) =>
+															handleChange(
+																"alt",
+																e.target.value
+															)
+														}
 													/>
 												</div>
+												{/* Platelet Count */}
 												<div>
 													<Label className="text-sm font-medium">
-														Platelet Count (×10³/μL)
+														Platelet Count (10³/μL)
 													</Label>
 													<Input
-														className="mt-2"
-														type="number"
-														placeholder="Platelet count"
+														type="text"
+														placeholder="e.g. 250"
+														value={
+															inputs.plateletCount
+														}
+														onChange={(e) =>
+															handleChange(
+																"plateletCount",
+																e.target.value
+															)
+														}
 													/>
 												</div>
 											</div>
-											<div className="flex items-center justify-between">
-												<Button className="bg-blue-600 hover:bg-blue-700">
-													<Calculator className="h-4 w-4 mr-2" />
-													Calculate FIB-4 Score
+
+											<div className="flex items-center justify-between mb-4">
+												<Button
+													onClick={calculateFib4}
+													className="bg-blue-600 hover:bg-blue-700">
+													<Calculator className="h-4 w-4 mr-2" />{" "}
+													Calculate
 												</Button>
-												<div className="text-sm text-blue-600">
-													<a
-														href="#"
-														className="underline">
-														MD Calc Integration
-													</a>
-												</div>
-											</div>
-											<div className="mt-4 p-3 bg-white rounded border">
-												<Label className="text-sm font-medium">
-													FIB-4 Score Result:
-												</Label>
-												<div className="mt-2 text-lg font-bold text-blue-700">
-													-- (Enter values to
-													calculate)
-												</div>
-												<div className="text-xs text-gray-600 mt-1">
+												<span className="text-xs text-gray-500">
 													Formula: (Age × AST) /
 													(Platelet × √ALT)
+												</span>
+											</div>
+
+											<div
+												className={`p-4 rounded border ${
+													interpretation
+														? ""
+														: "border-gray-200"
+												} ${
+													interpretation ===
+													"Low Risk"
+														? "border-green-200 bg-green-100"
+														: interpretation ===
+														  "Intermediate Risk"
+														? "border-yellow-200 bg-yellow-100"
+														: interpretation ===
+														  "High Risk"
+														? "border-red-200 bg-red-100"
+														: "bg-gray-50"
+												}`}>
+												<Label className="text-sm font-medium">
+													Result
+												</Label>
+												<div
+													className={`mt-2 text-lg font-bold ${colorMap[interpretation]}`}>
+													{result !== null
+														? result.toFixed(2)
+														: "--"}
 												</div>
+												{interpretation && (
+													<div
+														className={`mt-1 text-sm font-semibold ${
+															interpretation ===
+															"Low Risk"
+																? "text-green-800"
+																: interpretation ===
+																  "Intermediate Risk"
+																? "text-yellow-900"
+																: "text-red-800"
+														}`}>
+														{interpretation}
+													</div>
+												)}
 											</div>
 										</CardContent>
 									</Card>
