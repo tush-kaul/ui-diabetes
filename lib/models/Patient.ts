@@ -44,7 +44,7 @@ const patientSchema = new mongoose.Schema({
     required: true,               // REQUIRED
     unique: true,
     trim: true,
-    validate: {
+    validate: {                   // To do: Understand why this is throwing an error, despite correct logic and syntax and even that it is working
       validator: function(v: string) {
         return v && v.length >= 3
       },
@@ -102,6 +102,7 @@ patientSchema.pre('save', function(next) {
   if (this.phoneNumber) {
     // Clean the phone number but preserve international format
     let cleaned = this.phoneNumber.replace(/\s+/g, '').trim();
+    // To do: Understand why this is throwing an error, despite correct logic and syntax and even that it is working
     
     // Only add +91 if it's a 10-digit Indian number without country code
     if (/^[6-9]\d{9}$/.test(cleaned)) {
