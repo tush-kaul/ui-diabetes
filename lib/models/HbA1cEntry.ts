@@ -1,5 +1,6 @@
 import mongoose from 'mongoose'
 
+
 // HbA1cEntry Model
 const hbA1cSchema = new mongoose.Schema({
   phoneNumber: {                                                                                      // USED AS MAIN PATIENT ID
@@ -38,6 +39,7 @@ const hbA1cSchema = new mongoose.Schema({
         return v <= today && v >= fiveYearsAgo                                                         // UPTO 5 YEARS OF DATA HISTORY FOR RELEVANCE AND CONTROLLING DATASET SIZE
       },
       message: 'Test date must be within the last 5 years and not in the future'
+
 
     }
   },
@@ -86,12 +88,13 @@ const hbA1cSchema = new mongoose.Schema({
     type: String,
     required: false,
     trim: true,
-    maxLength: [300, 'Clinical reasoning cannot exceed 300 characters'],
-    // Optional field for doctor to explain their override decision
+    maxLength: [300, 'Clinical reasoning cannot exceed 300 characters'],                              // OPTIONAL: IF DOCTOR WANTS TO EXPLAIN WHY THE OVERRIDE
+
   }
 }, {
   timestamps: true,
 })
+
 
 hbA1cSchema.index({ phoneNumber: 1, testDate: -1 })                                                   // INITIATE INDEXES FOR QUERYING
 hbA1cSchema.index({ zone: 1 })
@@ -100,6 +103,7 @@ hbA1cSchema.index({ testDate: -1 })
 hbA1cSchema.index({ labName: 1, testDate: -1 })
 hbA1cSchema.index({ doctorOverrideZone: 1 })                                                          // TRACK DOCTOR OVERRIDES
 hbA1cSchema.index({ doctorOverrideAlertLevel: 1 })                                                    // TRACK DOCTOR OVERRIDES
+
 
 function getSystemClassification(value: number) {                                                     // SYSTEM CLASSIFIER (AS PER DRAWING)
   if (value < 3.5) {
@@ -123,6 +127,7 @@ function getSystemClassification(value: number) {                               
   }
 }
 
+
 function getPredefinedAlertLevelForZone(zone: string, value: number) {                                // SYSTEM CLASSIFIER (AS PER DRAWING)
   switch (zone.toLowerCase()) {
     case 'very low':
@@ -139,6 +144,7 @@ function getPredefinedAlertLevelForZone(zone: string, value: number) {          
       return getSystemClassification(value).alertLevel
   }
 }
+
 
 function getTypicalZoneForAlertLevel(alertLevel: string, value: number) {                             // GET ZONE IF "alertLevel" IS GIVEN
   switch (alertLevel.toLowerCase()) {
@@ -159,71 +165,94 @@ function getTypicalZoneForAlertLevel(alertLevel: string, value: number) {       
   }
 }
 
-hbA1cSchema.pre('save', function(next) {                                                              // PRE-SAVE WHEN "HbA1c" IS ENTERED BY DOCTOR
+
+hbA1cSchema.pre('save', function(next) {                                                              // PRE-SAVE WHEN "HbA1c" IS ENTERED BY DOCTOR FOR SYSTEM CLASSIFICATION TO WORK PROPERLY
   const value = this.value
   
-  console.log(`🔧 Pre-save hook running for HbA1c value: ${value}%`)
+  console.log(`Pre-save hook running for HbA1c value: ${value}%`)
   
   const doctorProvidedZone = this.isNew ?                                                             // CHECK IF DOCTOR ENTERES ZONE
     (this.zone && this.zone !== undefined) : 
     this.isModified('zone')
 
+
   const doctorProvidedAlertLevel = this.isNew ?                                                       // CHECK IF DOCTOR ENTERS ALERTLEVEL
     (this.alertLevel && this.alertLevel !== undefined) : 
     this.isModified('alertLevel')
 
+
     const systemClassification = getSystemClassification(value)                                       // RETURN SYSTEM CLASSIFIER'S OUTPUT AS A PROMPT TO DOCTOR (LIKE A SUGGESTION HEY THIS WHAT THE SYSTEM THOUGHT, JUST DOUBLE-CHECK)
 
+
   if (doctorProvidedZone && doctorProvidedAlertLevel && this.zone && this.alertLevel) {               // CASE 1: DOCTOR PROVIDES BOTH zone AND alertLevel (DOCTOR FULL OVERRIDE)
-    console.log(`👨‍⚕️ Full doctor override: zone=${this.zone}, alertLevel=${this.alertLevel}`)
+    console.log(`Full doctor override: zone=${this.zone}, alertLevel=${this.alertLevel}`)
     console.log(`   → System would suggest: ${systemClassification.zone}/${systemClassification.alertLevel}`)
     console.log(`   → Using complete doctor override`)
     
-    // Mark both as doctor overrides
-    this.doctorOverrideZone = true
+    this.doctorOverrideZone = true                                                                    // zone && alertLevel: OVERRIDE
     this.doctorOverrideAlertLevel = true
   }
 
+
   else if (doctorProvidedZone && this.zone && !doctorProvidedAlertLevel) {                            // CASE 2: DOCTOR ENTERS zone BUT WANTS alertLevel; SYSTEM USES DOCTOR'S zone INPUT TO DETERMINE
     this.alertLevel = getPredefinedAlertLevelForZone(this.zone, value)
-    console.log(`👨‍⚕️ Doctor zone override: ${this.zone}`)
+    console.log(`Doctor zone override: ${this.zone}`)
     console.log(`   → Using predefined alert level for zone: ${this.alertLevel}`)
     
     this.doctorOverrideZone = true                                                                    // zone: OVERRIDE && alertLevel: PARTIAL SYSTEM CLASSIFICATION
     this.doctorOverrideAlertLevel = false
   }
 
+
   else if (doctorProvidedAlertLevel && this.alertLevel && !doctorProvidedZone) {                      // CASE 3: DOCTOR ENTERS alertLevel BUT WANTS zone: SYSTEM USES DOCTOR'S alertLevel INPUT TO DETERMINE
     this.zone = getTypicalZoneForAlertLevel(this.alertLevel, value)
-    console.log(`👨‍⚕️ Doctor alert level override: ${this.alertLevel}`)
+    console.log(`Doctor alert level override: ${this.alertLevel}`)
     console.log(`   → Using typical zone for alert level: ${this.zone}`)
     
     this.doctorOverrideZone = false                                                                   // zone: PARTIAL SYSTEM CLASSIFICATION && alertLevel: OVERRIDE
     this.doctorOverrideAlertLevel = true
   }
 
+
   else {                                                                                              // CASE 4: DOCTOR ENTERS NOTHING; FULL SYSTEM CLASSIFICATION    
     this.zone = systemClassification.zone
     this.alertLevel = systemClassification.alertLevel
-    console.log(`🤖 Complete predefined classification: ${this.zone}/${this.alertLevel}`)
+    console.log(`Complete predefined classification: ${this.zone}/${this.alertLevel}`)
     
     this.doctorOverrideZone = false                                                                   // zone && alertLevel: SYSTEM CLASSIFICATION
     this.doctorOverrideAlertLevel = false
   }
   
-  if (this.phoneNumber) {                                                                             // PHONE NUMBER FORMATTING FUNCTION
-    let cleanPhone = this.phoneNumber.replace(/[\s\-\(\)]/g, '')
+  if (this.phoneNumber) {                                                                             // PHONE NUMBER FORMATTING FUNCTION - UPDATED TO MATCH PATIENT MODEL
+    let cleaned = this.phoneNumber.replace(/[\s\-\(\)]/g, '').trim();
     
-    if (!cleanPhone.startsWith('+')) {
-      if (cleanPhone.length === 10 && cleanPhone.startsWith('9')) {
-        cleanPhone = '+91' + cleanPhone
-      }
-      else if (cleanPhone.length === 11 && cleanPhone.startsWith('1')) {
-        cleanPhone = '+' + cleanPhone
+    if (cleaned.startsWith('00')) {                                                                   // HANDLE EUROPEAN FORMAT (00XX) FIRST
+      cleaned = '+' + cleaned.substring(2)
+      console.log(`Converted European format: ${cleaned}`)
+      
+      if (cleaned.startsWith('+91') && !cleaned.includes('-')) {                                     // ADDITIONAL CHECK: IF EUROPEAN FORMAT CONVERTS TO INDIAN NUMBER, ADD DASH
+        cleaned = cleaned.replace('+91', '+91-')
+        console.log(`Added dash to converted Indian number: ${cleaned}`)
       }
     }
+    else if (/^[6-9]\d{9}$/.test(cleaned)) {                                                          // HANDLE INDIAN NUMBERS WITHOUT COUNTRY CODE
+      cleaned = '+91-' + cleaned;
+      console.log(`Added India country code: ${cleaned}`)
+    }
+    else if (/^1\d{10}$/.test(cleaned)) {                                                             // HANDLE US NUMBERS WITHOUT COUNTRY CODE (11 DIGITS STARTING WITH 1)
+      cleaned = '+' + cleaned;
+      console.log(` Added US country code: ${cleaned}`)
+    }
+    else if (cleaned.startsWith('+91') && !cleaned.includes('-')) {                                   // ADD PROPER DASH FORMATTING FOR INDIAN NUMBERS
+      cleaned = cleaned.replace('+91', '+91-')
+      console.log(`Formatted Indian number with dash: ${cleaned}`)
+    }
+    else if (cleaned.startsWith('+1') && cleaned.length === 12 && !cleaned.includes('-')) {          // ADD PROPER DASH FORMATTING FOR US NUMBERS
+      cleaned = cleaned.replace('+1', '+1-')
+      console.log(`Formatted US number with dash: ${cleaned}`)
+    }
     
-    this.phoneNumber = cleanPhone
+    this.phoneNumber = cleaned
   }
   
   console.log(`   → Final: zone=${this.zone}, alertLevel=${this.alertLevel}`)
@@ -231,6 +260,8 @@ hbA1cSchema.pre('save', function(next) {                                        
   next()
 })
 
+
 export const HbA1cEntry = mongoose.models.HbA1cEntry || mongoose.model('HbA1cEntry', hbA1cSchema)
+
 
 export default HbA1cEntry

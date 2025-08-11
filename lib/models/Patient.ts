@@ -1,6 +1,5 @@
 import mongoose from 'mongoose'
 
-
 // Patient Model
 const patientSchema = new mongoose.Schema({
   name: {
@@ -145,40 +144,56 @@ const patientSchema = new mongoose.Schema({
   timestamps: true,
 })
 
-
 patientSchema.index({ name: 1 })                 
 patientSchema.index({ age: 1, gender: 1 })       
 patientSchema.index({ 'emergencyContact.phoneNumber': 1 })
-
 
 patientSchema.pre('save', function(next) {                                                                        // PRE-SAVE FOR BETTER ID GENERATION
   console.log(`Processing patient: ${this.name}`)
   
   if (this.phoneNumber) {                                                                                         // PHONE NUMBER FORMATTING DURING PRE-SAVE
     let cleaned = this.phoneNumber.replace(/[\s\-\(\)]/g, '').trim();
+    console.log(`Original phone: "${this.phoneNumber}" → Cleaned: "${cleaned}"`)
     
     if (cleaned.startsWith('00')) {                                                                               // TO AUTOMATICALLY DETECT EUROPEAN STYLE INPUT FORMAT AND CLEAN
       cleaned = '+' + cleaned.substring(2)
-      console.log(`   Converted European format: ${cleaned}`)
+      console.log(`Converted European format: ${cleaned}`)
+      
+      if (cleaned.startsWith('+91') && !cleaned.includes('-')) {                                                 // ADDITIONAL CHECK: IF EUROPEAN FORMAT CONVERTS TO INDIAN NUMBER, ADD DASH
+        cleaned = cleaned.replace('+91', '+91-')
+        console.log(`Added dash to converted Indian number: ${cleaned}`)
+      }
     }
     else if (/^[6-9]\d{9}$/.test(cleaned)) {                                                                      // TO AUTOMATICALLY DETECT INDIAN NUMBER AND CLEAN
       cleaned = '+91-' + cleaned;
-      console.log(`   Added India country code: ${cleaned}`)
+      console.log(`Added India country code: ${cleaned}`)
     }
-    else if (/^1\d{10}$/.test(cleaned)) {                                                                         // AUTOMATICALLY DETECT US NUMBER AND CLEAN
+    else if (/^1\d{10}$/.test(cleaned)) {                                                                         // AUTOMATICALLY DETECT US NUMBER AND CLEAN  
+      cleaned = '+1-' + cleaned;
+      console.log(`Added US country code with dash: ${cleaned}`)
+    }
+    else if (/^44\d{10}$/.test(cleaned)) {                                                                        // UK NUMBER DETECTION
       cleaned = '+' + cleaned;
-      console.log(`   Added US country code: ${cleaned}`)
+      console.log(`Added UK country code: ${cleaned}`)
     }
     else if (cleaned.startsWith('+91') && !cleaned.includes('-')) {                                               // IMPLEMENT PROPER FORMATTING FOR EXISITING (+) PHONE NUMBERS
       cleaned = cleaned.replace('+91', '+91-')
-      console.log(`   Formatted Indian number: ${cleaned}`)
+      console.log(`Formatted Indian number: ${cleaned}`)
     }
     else if (cleaned.startsWith('+1') && cleaned.length === 12 && !cleaned.includes('-')) {
       cleaned = cleaned.replace('+1', '+1-')
-      console.log(`   Formatted US number: ${cleaned}`)
+      console.log(`Formatted US number: ${cleaned}`)
+    }
+    else if (cleaned.startsWith('+1') && cleaned.includes('-')) {                                                 // HANDLE US NUMBERS WITH DASHES IN THE WRONG PLACE
+      const digitsOnly = cleaned.replace(/[-]/g, '')
+      if (digitsOnly.length === 12 && digitsOnly.startsWith('+1')) {
+        cleaned = digitsOnly.replace('+1', '+1-')
+        console.log(`Reformatted US number: ${cleaned}`)
+      }
     }
     
     this.phoneNumber = cleaned;
+    console.log(`Final formatted phone: "${this.phoneNumber}"`)
   }
   
   if (this.emergencyContact && this.emergencyContact.phoneNumber) {                                               // SIMILARLY FOR EMERGENCY CONTACT DETAILS
@@ -186,9 +201,15 @@ patientSchema.pre('save', function(next) {                                      
     
     if (cleaned.startsWith('00')) {
       cleaned = '+' + cleaned.substring(2)
+      
+      if (cleaned.startsWith('+91') && !cleaned.includes('-')) {                                                 // ADDITIONAL CHECK: IF EUROPEAN FORMAT CONVERTS TO INDIAN NUMBER, ADD DASH
+        cleaned = cleaned.replace('+91', '+91-')
+      }
     } else if (/^[6-9]\d{9}$/.test(cleaned)) {
       cleaned = '+91-' + cleaned;
     } else if (/^1\d{10}$/.test(cleaned)) {
+      cleaned = '+1-' + cleaned;
+    } else if (/^44\d{10}$/.test(cleaned)) {
       cleaned = '+' + cleaned;
     } else if (cleaned.startsWith('+91') && !cleaned.includes('-')) {
       cleaned = cleaned.replace('+91', '+91-')
@@ -205,7 +226,7 @@ patientSchema.pre('save', function(next) {                                      
     const timestamp = Date.now().toString().slice(-6)                                                             // USES LAST 6 DIGITS OF TIME STAMP
     
     this.opd = `OPD-GEN-${currentYear}-${timestamp}${randomId}`
-    console.log(`   Generated OPD: ${this.opd}`)
+    console.log(`Generated OPD: ${this.opd}`)
   }
   
   if (!this.mrn) {                                                                                                // AUTO GENERATE MRN
@@ -214,13 +235,12 @@ patientSchema.pre('save', function(next) {                                      
     const mrnNumber = patientCount.toString().padStart(6, '0')                                                    // PAD WTH ZEROS (CHANGE FOR PRODUCTION)
     
     this.mrn = `MRN-${currentYear}-${mrnNumber}`
-    console.log(`   Generated MRN: ${this.mrn}`)
+    console.log(`Generated MRN: ${this.mrn}`)
   }
   
-  console.log(`   Patient processing complete`)
+  console.log(`Patient processing complete`)
   next()
 })
-
 
 patientSchema.methods.getDisplayInfo = function() {                                                                 // METHOD TO DISPLAY FULL PATIENT DATA
   return {
@@ -237,22 +257,24 @@ patientSchema.methods.getDisplayInfo = function() {                             
   }
 }
 
-
 patientSchema.statics.findByPhone = function(phoneNumber: string) {                                                // METHOD TO FIND PATIENT USING PHONE NUMBER
   const cleaned = phoneNumber.replace(/[-\s()]/g, '').trim()                                                       // CLEAN PHONE NUMBER TO ENSURE PROPER SYNTAX SEARCH
   
   return this.findOne({                                                                                            // ADDITIONAL SYNTAX SEARCH TO ENSURE SEARCH DOES NOT FAIL
     $or: [
-      { phoneNumber: phoneNumber },
-      { phoneNumber: cleaned },
-      { phoneNumber: '+91-' + cleaned.replace('+91', '').replace('-', '') },
-      { phoneNumber: '+91' + cleaned.replace('+91', '').replace('-', '') }
+      { phoneNumber: phoneNumber },                                    // Exact match as provided
+      { phoneNumber: cleaned },                                        // Without dashes/spaces
+      { phoneNumber: '+91-' + cleaned.replace(/^\+?91-?/, '') },       // Add Indian format with dash
+      { phoneNumber: '+91' + cleaned.replace(/^\+?91-?/, '') },        // Add Indian format without dash
+      { phoneNumber: '+1-' + cleaned.replace(/^\+?1-?/, '') },         // Add US format with dash
+      { phoneNumber: '+1' + cleaned.replace(/^\+?1-?/, '') },          // Add US format without dash
+      { phoneNumber: '+' + cleaned.replace(/^00/, '') },               // Convert European format
+      { phoneNumber: cleaned.replace(/^\+?91-?/, '+91-') },            // Different Indian variations
+      { phoneNumber: cleaned.replace(/^\+?1-?/, '+1-') }               // Different US variations
     ]
   })
 }
 
-
 export const Patient = mongoose.models.Patient || mongoose.model('Patient', patientSchema)
-
 
 export default Patient
