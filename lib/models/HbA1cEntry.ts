@@ -2,12 +2,12 @@ import mongoose from 'mongoose'
 
 // HbA1cEntry Model
 const hbA1cSchema = new mongoose.Schema({
-  phoneNumber: {                                                          // Matches Patient.ts model with support for international numbers
+  phoneNumber: {                                                                                      // USED AS MAIN PATIENT ID
     type: String,
-    required: true,                                                       // REQUIRED
+    required: true,                                                                                   // REQUIRED
     ref: 'Patient',
-    validate: {
-      validator: function(v: string) {
+    validate: {                                                                                       // INTERNATIONAL NUMBERS (+ / 00 PREFIX OR JUST PLAIN DIGITS); REMOVES, SPACES, DASHES AND BRACKETS BEFORE VALIDATING
+      validator: function(v: string) {                                                                
         const cleanNumber = v.replace(/[-\s()]/g, '');
         return /^(\+[1-9]\d{0,3}[0-9]{4,14}|00[1-9]\d{0,3}[0-9]{4,14}|[0-9]{7,15})$/.test(cleanNumber);
       },
@@ -16,178 +16,218 @@ const hbA1cSchema = new mongoose.Schema({
   },
   value: {
     type: Number,
-    required: true,                   // REQUIRED
-    min: [2.0, 'HbA1c value must be at least 2.0%'],                      // 2.0% to 3.0% have been recorded before          
-    max: [27.0, 'HbA1c value cannot exceed 27.0%'],                       // 25.6% has been documented in medical literature
+    required: true,                                                                                    // REQUIRED
+    min: [2.0, 'HbA1c value must be at least 2.0%'],                                                   // LOWEST EVER RECORDED VALUES WERE BETWEEN 2.0% - 3.0%
+    max: [27.0, 'HbA1c value cannot exceed 27.0%'],
     validate: {
       validator: function(v: number) {
-        return Number((v * 10) % 1) === 0                                 // Most lab reports show only one decimal place, I could be wrong
+        return Number((v * 10) % 1) === 0                                                              // ONE DECIMAL PLACE AS PER STANDARD
       },
       message: 'HbA1c value should have at most one decimal place'
     }
   },
   testDate: {
     type: Date,
-    required: true,                                                       // REQUIRED
+    required: true,                                                                                    // REQUIRED
     validate: {
-      validator: function(v: Date) {                                      // Allowing only upto 5 years of past data, anymore could result in overloading
+      validator: function(v: Date) {
         const today = new Date()
         const fiveYearsAgo = new Date()
         fiveYearsAgo.setFullYear(today.getFullYear() - 5)
         
-        return v <= today && v >= fiveYearsAgo
+        return v <= today && v >= fiveYearsAgo                                                         // UPTO 5 YEARS OF DATA HISTORY FOR RELEVANCE AND CONTROLLING DATASET SIZE
       },
       message: 'Test date must be within the last 5 years and not in the future'
+
     }
   },
   labName: {
     type: String,
-    required: true,                                                       // REQUIRED
+    required: true,                                                                                   // REQUIRED
     trim: true,
     maxLength: [100, 'Lab name cannot exceed 100 characters'],
   },
   notes: {
     type: String,
-    required: false,                                                      // OPTIONAL; if doctor wants to leave notes 
+    required: false,                                                                                  // OPTIONAL; DOCTOR CAN ADD ADDITIONAL NOTES                                                                                   
     trim: true,
     maxLength: [500, 'Notes cannot exceed 500 characters'],
   },
-  zone: {                                                                 // In the dashboard, mention not REQUIRED, doctor can add classification themselves
-    type: String,                                                         // Doctor's insights >> Helper functions
-    required: false,                                                      // OPTIONAL; if doctor enters value, no matter what system thinks Doctor >> System
+  zone: {
+    type: String,
+    required: false,                                                                                  // OPTIONAL; DOCTOR OR AUTO-SYSTEM CLASSIFICATION USING HELPER FUNCTION "getSystemClassification(value: number)""
     enum: {
-      values: ['low', 'optimal', 'high'],
-      message: 'Zone must be one of: low, optimal, high'
+      values: ['very low', 'low', 'optimal', 'high', 'very high'],
+      message: 'Zone must be one of: very low, low, optimal, high, very high'
     },
     lowercase: true,
   },
-  alertLevel: {                                                           // Same as "zone"
+  alertLevel: {
+    type: String,
+    required: false,                                                                                  // OPTIONAL; DOC OR HELPER FUNCTION "getPredefinedAlertLevelForZone(zone: string, value: number)"
+    enum: {
+      values: ['none', 'borderline caution', 'caution', 'borderline critical', 'critical'],
+      message: 'Alert level must be one of: none, borderline caution, caution, borderline critical, critical'
+    },
+    lowercase: true,
+  },
+  
+  doctorOverrideZone: {
+    type: Boolean,
+    default: false,
+    required: false,                                                                                  // TRACK WHEN DOCTOR SETS THE ZONE OR USES SYSTEM CLASSIFICATION
+  },
+  doctorOverrideAlertLevel: {
+    type: Boolean,
+    default: false,                                                         
+    required: false,                                                                                  // TRACK WHEN DOCTOR SETS THE ALERT LEVEL OR USES SYSTEM CLASSIFICATION
+  },
+  clinicalReasoning: {
     type: String,
     required: false,
-    enum: {
-      values: ['none', 'cautionary', 'critical'],
-      message: 'Alert level must be one of: none, cautionary, critical'
-    },
-    lowercase: true,
-  },
+    trim: true,
+    maxLength: [300, 'Clinical reasoning cannot exceed 300 characters'],
+    // Optional field for doctor to explain their override decision
+  }
 }, {
   timestamps: true,
 })
 
-// Create compound indexes for efficient queries
-hbA1cSchema.index({ phoneNumber: 1, testDate: -1 })
+hbA1cSchema.index({ phoneNumber: 1, testDate: -1 })                                                   // INITIATE INDEXES FOR QUERYING
 hbA1cSchema.index({ zone: 1 })
 hbA1cSchema.index({ alertLevel: 1 })
 hbA1cSchema.index({ testDate: -1 })
 hbA1cSchema.index({ labName: 1, testDate: -1 })
+hbA1cSchema.index({ doctorOverrideZone: 1 })                                                          // TRACK DOCTOR OVERRIDES
+hbA1cSchema.index({ doctorOverrideAlertLevel: 1 })                                                    // TRACK DOCTOR OVERRIDES
 
-// Helper functions, this function is what will give us our zone classification based on HbA1cEntry_value
-function getSystemClassification(value: number) {
-  if (value < 4.0) {
-    return { zone: 'low', alertLevel: 'cautionary' }
-  } else if (value <= 7.0) {
+function getSystemClassification(value: number) {                                                     // SYSTEM CLASSIFIER (AS PER DRAWING)
+  if (value < 3.5) {
+    return { zone: 'very low', alertLevel: 'critical' }
+  } else if (value <= 3.7) {
+    return { zone: 'very low', alertLevel: 'borderline critical' }
+  } else if (value <= 4.5) {
+    return { zone: 'low', alertLevel: 'caution' }
+  } else if (value <= 4.7) {
+    return { zone: 'low', alertLevel: 'borderline caution' }
+  } else if (value <= 7.3) {
     return { zone: 'optimal', alertLevel: 'none' }
+  } else if (value <= 7.5) {
+    return { zone: 'high', alertLevel: 'borderline caution' }
+  } else if (value <= 8.3) {
+    return { zone: 'high', alertLevel: 'caution' }
   } else if (value <= 8.5) {
-    return { zone: 'high', alertLevel: 'cautionary' }
+    return { zone: 'very high', alertLevel: 'borderline critical' }
   } else {
-    return { zone: 'high', alertLevel: 'critical' }
+    return { zone: 'very high', alertLevel: 'critical' }
   }
 }
 
-// Helper functions, this function is what will give us our alertLevel classification based on what function getSystemClassification or zone is
-function getAlertLevelForZone(zone: string, value: number) {
+function getPredefinedAlertLevelForZone(zone: string, value: number) {                                // SYSTEM CLASSIFIER (AS PER DRAWING)
   switch (zone.toLowerCase()) {
+    case 'very low':
+      return value < 3.5 ? 'critical' : 'borderline critical'
     case 'low':
-      return 'cautionary'
+      return value <= 4.5 ? 'caution' : 'borderline caution'
     case 'optimal':
       return 'none'
     case 'high':
-      return value > 8.5 ? 'critical' : 'cautionary'
+      return value <= 7.5 ? 'borderline caution' : 'caution'
+    case 'very high':
+      return value <= 8.5 ? 'borderline critical' : 'critical'
     default:
       return getSystemClassification(value).alertLevel
   }
 }
 
-// Helper function to autofill zone if left blank; auto fill the zone value based on what AlertLevel is
-function getZoneForAlertLevel(alertLevel: string, value: number) {
+function getTypicalZoneForAlertLevel(alertLevel: string, value: number) {                             // GET ZONE IF "alertLevel" IS GIVEN
   switch (alertLevel.toLowerCase()) {
     case 'none':
       return 'optimal'
-    case 'cautionary':
-      return value < 4.0 ? 'low' : 'high'
+    case 'borderline caution':
+      if (value <= 4.7) return 'low'
+      else if (value <= 7.5) return 'high'
+      else return 'very high'
+    case 'caution':
+      return value <= 4.5 ? 'low' : 'high'
+    case 'borderline critical':
+      return value <= 3.7 ? 'very low' : 'very high'
     case 'critical':
-      return 'high'
+      return value < 3.5 ? 'very low' : 'very high'
     default:
       return getSystemClassification(value).zone
   }
 }
 
-// Pre-save middleware with international phone number formatting
-hbA1cSchema.pre('save', function(next) {
+hbA1cSchema.pre('save', function(next) {                                                              // PRE-SAVE WHEN "HbA1c" IS ENTERED BY DOCTOR
   const value = this.value
   
-  console.log(`Pre-save hook running for HbA1c value: ${value}%`)
+  console.log(`🔧 Pre-save hook running for HbA1c value: ${value}%`)
   
-// Check if the doctor has provided both zone and alertLevel
-const doctorProvidedZone = this.isNew ? 
-  (this.zone && this.zone !== undefined) : 
-  this.isModified('zone')
+  const doctorProvidedZone = this.isNew ?                                                             // CHECK IF DOCTOR ENTERES ZONE
+    (this.zone && this.zone !== undefined) : 
+    this.isModified('zone')
 
-const doctorProvidedAlertLevel = this.isNew ? 
-  (this.alertLevel && this.alertLevel !== undefined) : 
-  this.isModified('alertLevel')
+  const doctorProvidedAlertLevel = this.isNew ?                                                       // CHECK IF DOCTOR ENTERS ALERTLEVEL
+    (this.alertLevel && this.alertLevel !== undefined) : 
+    this.isModified('alertLevel')
 
-// Case 1: Doctor provided both zone and alertLevel (Doctor >> System)
-if (doctorProvidedZone && doctorProvidedAlertLevel && this.zone && this.alertLevel) {
-  console.log(`Doctor override detected: zone=${this.zone}, alertLevel=${this.alertLevel}`)
-  const systemSuggestion = getSystemClassification(value)
-  console.log(`   → System would suggest: ${systemSuggestion.zone}/${systemSuggestion.alertLevel}`)
-  console.log(`   → Using doctor's clinical judgment instead`)
-}
+    const systemClassification = getSystemClassification(value)                                       // RETURN SYSTEM CLASSIFIER'S OUTPUT AS A PROMPT TO DOCTOR (LIKE A SUGGESTION HEY THIS WHAT THE SYSTEM THOUGHT, JUST DOUBLE-CHECK)
 
-// Case 2: Doctor provided zone only → calculate alertLevel using doctor's zone value
-else if (doctorProvidedZone && this.zone && !doctorProvidedAlertLevel) {
-  this.alertLevel = getAlertLevelForZone(this.zone, value)
-  console.log(`Doctor provided zone: ${this.zone}, system calculated alertLevel: ${this.alertLevel}`)
-}
+  if (doctorProvidedZone && doctorProvidedAlertLevel && this.zone && this.alertLevel) {               // CASE 1: DOCTOR PROVIDES BOTH zone AND alertLevel (DOCTOR FULL OVERRIDE)
+    console.log(`👨‍⚕️ Full doctor override: zone=${this.zone}, alertLevel=${this.alertLevel}`)
+    console.log(`   → System would suggest: ${systemClassification.zone}/${systemClassification.alertLevel}`)
+    console.log(`   → Using complete doctor override`)
+    
+    // Mark both as doctor overrides
+    this.doctorOverrideZone = true
+    this.doctorOverrideAlertLevel = true
+  }
 
-// Case 3: Doctor provided alertLevel only → calculate zone using doctor's alertLevel
-else if (doctorProvidedAlertLevel && this.alertLevel && !doctorProvidedZone) {
-  this.zone = getZoneForAlertLevel(this.alertLevel, value)
-  console.log(`Doctor provided alertLevel: ${this.alertLevel}, system calculated zone: ${this.zone}`)
-}
+  else if (doctorProvidedZone && this.zone && !doctorProvidedAlertLevel) {                            // CASE 2: DOCTOR ENTERS zone BUT WANTS alertLevel; SYSTEM USES DOCTOR'S zone INPUT TO DETERMINE
+    this.alertLevel = getPredefinedAlertLevelForZone(this.zone, value)
+    console.log(`👨‍⚕️ Doctor zone override: ${this.zone}`)
+    console.log(`   → Using predefined alert level for zone: ${this.alertLevel}`)
+    
+    this.doctorOverrideZone = true                                                                    // zone: OVERRIDE && alertLevel: PARTIAL SYSTEM CLASSIFICATION
+    this.doctorOverrideAlertLevel = false
+  }
 
-// Case 4: No doctor input → use of helper function to calculate both zone and alertLevel
-else {
-  const systemClassification = getSystemClassification(value)
-  this.zone = systemClassification.zone
-  this.alertLevel = systemClassification.alertLevel
-  console.log(`Automatic classification: ${this.zone}/${this.alertLevel}`)
-}
+  else if (doctorProvidedAlertLevel && this.alertLevel && !doctorProvidedZone) {                      // CASE 3: DOCTOR ENTERS alertLevel BUT WANTS zone: SYSTEM USES DOCTOR'S alertLevel INPUT TO DETERMINE
+    this.zone = getTypicalZoneForAlertLevel(this.alertLevel, value)
+    console.log(`👨‍⚕️ Doctor alert level override: ${this.alertLevel}`)
+    console.log(`   → Using typical zone for alert level: ${this.zone}`)
+    
+    this.doctorOverrideZone = false                                                                   // zone: PARTIAL SYSTEM CLASSIFICATION && alertLevel: OVERRIDE
+    this.doctorOverrideAlertLevel = true
+  }
+
+  else {                                                                                              // CASE 4: DOCTOR ENTERS NOTHING; FULL SYSTEM CLASSIFICATION    
+    this.zone = systemClassification.zone
+    this.alertLevel = systemClassification.alertLevel
+    console.log(`🤖 Complete predefined classification: ${this.zone}/${this.alertLevel}`)
+    
+    this.doctorOverrideZone = false                                                                   // zone && alertLevel: SYSTEM CLASSIFICATION
+    this.doctorOverrideAlertLevel = false
+  }
   
-  // for International phone number formatting
-  if (this.phoneNumber) {
-    // Clean the phone number
+  if (this.phoneNumber) {                                                                             // PHONE NUMBER FORMATTING FUNCTION
     let cleanPhone = this.phoneNumber.replace(/[\s\-\(\)]/g, '')
     
-    // If it doesn't start with +, try to detect and add country code
     if (!cleanPhone.startsWith('+')) {
-      // For backward compatibility, if it looks like Indian number, add +91
       if (cleanPhone.length === 10 && cleanPhone.startsWith('9')) {
         cleanPhone = '+91' + cleanPhone
       }
-      // For US numbers starting with 1
       else if (cleanPhone.length === 11 && cleanPhone.startsWith('1')) {
         cleanPhone = '+' + cleanPhone
       }
-      // For other 10+ digit numbers, keep as is (Indian format)
     }
     
-    // Store the cleaned/formatted phone number
     this.phoneNumber = cleanPhone
   }
   
   console.log(`   → Final: zone=${this.zone}, alertLevel=${this.alertLevel}`)
+  console.log(`   → Override flags: zone=${this.doctorOverrideZone}, alertLevel=${this.doctorOverrideAlertLevel}`)
   next()
 })
 
