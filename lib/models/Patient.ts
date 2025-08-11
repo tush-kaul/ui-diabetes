@@ -148,8 +148,7 @@ const patientSchema = new mongoose.Schema({
 
 patientSchema.index({ name: 1 })                 
 patientSchema.index({ age: 1, gender: 1 })       
-patientSchema.index({ 'emergencyContact.phoneNumber': 1 }) 
-// REMOVED DUPLICATE MRN INDEX - THE UNIQUE/SPARSE FIELDS ALREADY CREATE THE INDEX
+patientSchema.index({ 'emergencyContact.phoneNumber': 1 })
 
 
 patientSchema.pre('save', function(next) {                                                                        // PRE-SAVE FOR BETTER ID GENERATION
@@ -158,23 +157,19 @@ patientSchema.pre('save', function(next) {                                      
   if (this.phoneNumber) {                                                                                         // PHONE NUMBER FORMATTING DURING PRE-SAVE
     let cleaned = this.phoneNumber.replace(/[\s\-\(\)]/g, '').trim();
     
-    // Handle European format (00XX)
     if (cleaned.startsWith('00')) {                                                                               // TO AUTOMATICALLY DETECT EUROPEAN STYLE INPUT FORMAT AND CLEAN
       cleaned = '+' + cleaned.substring(2)
       console.log(`   Converted European format: ${cleaned}`)
     }
-    // Handle Indian numbers without country code
-    else if (/^[6-9]\d{9}$/.test(cleaned)) {                                                                     // TO AUTOMATICALLY DETECT INDIAN NUMBER AND CLEAN
+    else if (/^[6-9]\d{9}$/.test(cleaned)) {                                                                      // TO AUTOMATICALLY DETECT INDIAN NUMBER AND CLEAN
       cleaned = '+91-' + cleaned;
       console.log(`   Added India country code: ${cleaned}`)
     }
-    // Handle US numbers without country code  
-    else if (/^1\d{10}$/.test(cleaned)) {
+    else if (/^1\d{10}$/.test(cleaned)) {                                                                         // AUTOMATICALLY DETECT US NUMBER AND CLEAN
       cleaned = '+' + cleaned;
       console.log(`   Added US country code: ${cleaned}`)
     }
-    // Add proper formatting for existing + numbers
-    else if (cleaned.startsWith('+91') && !cleaned.includes('-')) {
+    else if (cleaned.startsWith('+91') && !cleaned.includes('-')) {                                               // IMPLEMENT PROPER FORMATTING FOR EXISITING (+) PHONE NUMBERS
       cleaned = cleaned.replace('+91', '+91-')
       console.log(`   Formatted Indian number: ${cleaned}`)
     }
