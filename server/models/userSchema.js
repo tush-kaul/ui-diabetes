@@ -141,11 +141,68 @@ const UserSchema = new Schema(
     sleepQuality:{
       type: String,
       required:false
+    },
+    mrn: {
+      type: String,
+      unique: true,
+      sparse: true,
+      default: null,
+      trim: true
+    },
+    opd: {
+      type: String,
+      unique: true,
+      sparse: true,
+      default: null,
+      trim: true
+    },
+    ipd: {
+      type: String,
+      sparse: true,
+      default: null,
+      trim: true
+    },
+    emergencyContact: {
+      name: {
+        type: String,
+        default: null,
+        trim: true
+      },
+      phoneNumber: {
+        type: String,
+        default: null,
+        trim: true
+      },
+      relationship: {
+        type: String,
+        default: null
+      }
+    },
+    clinicalStatus: {
+      type: String,
+      default: 'New patient - initial assessment pending',
+      trim: true
+    },
+    clinicalFlags: [{
+      type: String,
+      trim: true
+    }],
+    clinicalNotes: {
+      type: String,
+      default: null,
+      trim: true
     }
   },
   {
     timestamps: true,
   }
 );
+
 const Users = mongoose.model("User", UserSchema);
+
+Users.collection.createIndex({ mrn: 1 });
+Users.collection.createIndex({ opd: 1 });
+Users.collection.createIndex({ 'emergencyContact.phoneNumber': 1 });
+Users.collection.createIndex({ clinicalFlags: 1 });
+
 export default Users;
