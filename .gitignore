@@ -28,3 +28,4 @@ next-env.d.ts
 
 # Directories
 /ARCHIVE
+server/casamed-*-firebase-adminsdk-*.json
