@@ -1,3 +1,5 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import Product from "../models/productSchema.js";
 import ProductStat from "../models/selfdiagnostic.js";
 import TrueUsers from "../models/userModel.js";
@@ -31,7 +33,7 @@ const api = apiAdapter(BASE_URL);
 clientRouter.get("/share-app-link", async (req, res) => {
   try {
     const firebaseDynamicLinks = new FirebaseDynamicLinks(
-      "REDACTED_FIREBASE_KEY"
+      process.env.FIREBASE_API_KEY
     );
     const { shortLink, previewLink } = await firebaseDynamicLinks.createLink({
       dynamicLinkInfo: {
@@ -550,7 +552,7 @@ clientRouter.post("/user-cases/invite", async (req, res) => {
     const userCases = await api.post(`/account-service/user-cases`, userCase);
     const otpRequestHeaders = {
       // "Content-Type": "application/x-www-form-urlencoded",
-      "api-key": "REDACTED_KALEYRA_KEY",
+      "api-key": process.env.KALEYRA_API_KEY,
     };
     const otpRequestParams = {
       to: `${account.mobile}`,
@@ -806,7 +808,7 @@ clientRouter.post("/send-sms", async (req, res) => {
   try {
     const otpRequestHeaders = {
       // "Content-Type": "application/x-www-form-urlencoded",
-      "api-key": "REDACTED_KALEYRA_KEY",
+      "api-key": process.env.KALEYRA_API_KEY,
     };
     const otpRequestParams = {
       to: `${req.body.phoneClient}`,
