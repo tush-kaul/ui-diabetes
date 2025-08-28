@@ -2347,16 +2347,16 @@ export default function PatientOverviewEnhanced({
 																			}
 																			)
 																		</div>
-																		{metric.lastVisitValue && (
+																		{metric?.lastVisitValue && (
 																			<div className="text-xs opacity-80 mb-1">
 																				Last
 																				visit:{" "}
 																				{
-																					metric.lastVisitValue
+																					metric?.lastVisitValue
 																				}{" "}
 																				(
 																				{
-																					metric.lastVisitDate
+																					metric?.lastVisitDate
 																				}
 
 																				)

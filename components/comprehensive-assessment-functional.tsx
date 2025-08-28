@@ -841,7 +841,7 @@ export default function ComprehensiveAssessmentFunctional({
 				</div>
 
 				{/* Renal Risk Heatmap (KDIGO) */}
-				<div>
+				{/* <div>
 					<h3 className="text-lg font-semibold mb-3 text-blue-900">
 						Renal Risk Heatmap
 					</h3>
@@ -1000,7 +1000,7 @@ export default function ComprehensiveAssessmentFunctional({
 							</div>
 						);
 					})()}
-				</div>
+				</div> */}
 
 				{isChart ? (
 					<>
