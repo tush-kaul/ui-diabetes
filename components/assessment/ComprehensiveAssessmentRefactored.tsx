@@ -289,7 +289,7 @@ export default function ComprehensiveAssessmentRefactored({
 				value={activeTab}
 				onValueChange={setActiveTab}
 				className="w-full">
-				<TabsList className="mb-4 flex-wrap">
+				<TabsList className="mb-4 overflow-x-auto whitespace-nowrap">
 					<TabsTrigger value="complications">Complications Assessment</TabsTrigger>
 					<TabsTrigger value="retinopathy">Retinopathy Specialist</TabsTrigger>
 					<TabsTrigger value="nephropathy">Nephropathy</TabsTrigger>

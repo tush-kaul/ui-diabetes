@@ -5,6 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +28,7 @@ import {
 	CheckCircle,
 	Edit3,
 	Save,
+	HelpCircle,
 } from "lucide-react";
 
 export default function LifestyleEnhanced() {
@@ -32,6 +39,7 @@ export default function LifestyleEnhanced() {
 		portionControl: true,
 		fruitsVegetables: false,
 		mealTiming: true,
+		outsideFoodMoreThanWeekly: false,
 	});
 
 	const [physicalActivity, setPhysicalActivity] = useState({
@@ -66,11 +74,24 @@ export default function LifestyleEnhanced() {
 	};
 
 	const getDietComplianceScore = () => {
-		const checkedItems =
-			Object.values(dietChecklist).filter(Boolean).length;
-		return Math.round(
-			(checkedItems / Object.keys(dietChecklist).length) * 100
-		);
+		const keys = Object.keys(dietChecklist) as Array<keyof typeof dietChecklist>;
+		const adheredCount = keys.reduce((acc, key) => {
+			if (key === "outsideFoodMoreThanWeekly") {
+				return acc + (!dietChecklist[key] ? 1 : 0);
+			}
+			return acc + (dietChecklist[key] ? 1 : 0);
+		}, 0);
+		return Math.round((adheredCount / keys.length) * 100);
+	};
+
+	const getDietAdherenceCount = () => {
+		const keys = Object.keys(dietChecklist) as Array<keyof typeof dietChecklist>;
+		return keys.reduce((acc, key) => {
+			if (key === "outsideFoodMoreThanWeekly") {
+				return acc + (!dietChecklist[key] ? 1 : 0);
+			}
+			return acc + (dietChecklist[key] ? 1 : 0);
+		}, 0);
 	};
 
 	const getActivityScore = () => {
@@ -121,13 +142,12 @@ export default function LifestyleEnhanced() {
 							value={getDietComplianceScore()}
 							className="h-2 mb-2"
 						/>
-						<div className="text-xs text-gray-500">
-							{
-								Object.values(dietChecklist).filter(Boolean)
-									.length
-							}{" "}
-							of {Object.keys(dietChecklist).length} goals met
-						</div>
+							<div className="text-xs text-gray-500">
+								{getDietAdherenceCount()} of {Object.keys(dietChecklist).length} goals met
+							</div>
+							<div className="text-xs text-gray-600 mt-1">
+								Outside food: {dietChecklist.outsideFoodMoreThanWeekly ? ">1/week" : "≤1/week"}
+							</div>
 					</CardContent>
 				</Card>
 
@@ -216,14 +236,14 @@ export default function LifestyleEnhanced() {
 					<CardHeader>
 						<CardTitle className="text-xl text-navy-600 flex items-center">
 							<Apple className="mr-2 h-6 w-6 text-green-500" />
-							Diet Assessment & Issues
-						</CardTitle>
+								Diet Assessment
+							</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 							<div>
 								<h4 className="font-semibold mb-4 text-red-600">
-									Diet Issues Identified:
+									Diet:
 								</h4>
 								<div className="space-y-3">
 									<div className="flex items-center space-x-3">
@@ -342,9 +362,40 @@ export default function LifestyleEnhanced() {
 											{dietChecklist.mealTiming && (
 												<CheckCircle className="ml-2 h-4 w-4 text-green-500" />
 											)}
-										</Label>
+											</Label>
+										</div>
+										<div className="flex items-start space-x-3">
+											<Checkbox
+												id="outsideFoodMoreThanWeekly"
+												checked={dietChecklist.outsideFoodMoreThanWeekly}
+												onCheckedChange={(checked) =>
+													handleDietChange(
+														"outsideFoodMoreThanWeekly",
+														checked as boolean
+													)
+												}
+												disabled={!isEditing}
+											/>
+											<div className="space-y-1">
+												<Label htmlFor="outsideFoodMoreThanWeekly" className="flex items-center gap-2">
+													Eating/Ordering outside food more than once a week.
+													<TooltipProvider>
+														<Tooltip>
+															<TooltipTrigger asChild>
+																<HelpCircle className="h-4 w-4 text-gray-400" />
+															</TooltipTrigger>
+															<TooltipContent>
+																<p>Aim for once per week or less.</p>
+															</TooltipContent>
+														</Tooltip>
+													</TooltipProvider>
+												</Label>
+												<p className="text-xs text-gray-500">
+													Restaurant and takeaway foods can be high in sodium, sugar, and fats.
+												</p>
+											</div>
+										</div>
 									</div>
-								</div>
 							</div>
 
 							<div>
@@ -723,6 +774,7 @@ export default function LifestyleEnhanced() {
 											<option value="occasional">
 												Occasional
 											</option>
+
 											<option value="regular">
 												Regular
 											</option>

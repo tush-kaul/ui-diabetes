@@ -6,7 +6,12 @@ import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-const Dialog = DialogPrimitive.Root
+// Default modal={false} to avoid body scroll-lock and layout shifts
+const Dialog = (
+  props: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root>
+) => {
+  return <DialogPrimitive.Root modal={false} {...props} />
+}
 
 const DialogTrigger = DialogPrimitive.Trigger
 

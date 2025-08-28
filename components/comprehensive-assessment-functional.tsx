@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Select,
 	SelectContent,
@@ -199,6 +200,41 @@ export default function ComprehensiveAssessmentFunctional({
 	// Orders and Referrals State
 	const [pendingOrders, setPendingOrders] = useState<string[]>([]);
 	const [pendingReferrals, setPendingReferrals] = useState<string[]>([]);
+	// Local selection state for Order Tests
+	const [liverTests, setLiverTests] = useState<Record<string, boolean>>({});
+	const [cvaTests, setCvaTests] = useState<Record<string, boolean>>({});
+
+	const liverTestLabels: Record<string, string> = {
+		lft: "Liver Function Test (LFT)",
+		"cbc-platelet": "CBC/Platelet Count",
+		"ultrasound-yearly": "Ultrasound (Yearly)",
+		fibroscan: "FibroScan",
+		"hba1c-liver": "HbA1c",
+		"lipid-profile-liver": "Lipid Profile",
+	};
+	const cvaTestLabels: Record<string, string> = {
+		"carotid-doppler": "Carotid/Vertebral Doppler",
+		"transcranial-doppler": "Transcranial Doppler",
+		"mri-brain": "MRI Brain",
+		"ct-brain": "CT Brain",
+		"ecg-stroke": "ECG",
+		"echo-stroke": "Echocardiogram",
+		"lipid-profile-stroke": "Lipid Profile",
+		holter: "Holter Monitoring",
+	};
+
+	const addSelectedTests = (
+		selections: Record<string, boolean>,
+		labels: Record<string, string>
+	) => {
+		const toAdd = Object.entries(selections)
+			.filter(([, checked]) => checked)
+			.map(([id]) => labels[id] || id)
+			.filter((label) => label);
+		if (toAdd.length) {
+			setPendingOrders((prev) => [...prev, ...toAdd]);
+		}
+	};
 
 	// Retinopathy State
 	const [retinopathyHistory, setRetinopathyHistory] = useState({
@@ -306,6 +342,9 @@ export default function ComprehensiveAssessmentFunctional({
 		referrals: [] as string[],
 		actionPlan: "",
 		showOtherOrgans: false,
+		currentEgfr: "",
+		currentAcr: "",
+		currentCreatinine: "",
 	});
 
 	// Auto-save nephrology data to other components as per V3 requirements
@@ -801,6 +840,168 @@ export default function ComprehensiveAssessmentFunctional({
 					</Toggle>
 				</div>
 
+				{/* Renal Risk Heatmap (KDIGO) */}
+				<div>
+					<h3 className="text-lg font-semibold mb-3 text-blue-900">
+						Renal Risk Heatmap
+					</h3>
+					<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+						<div>
+							<Label className="text-sm">
+								eGFR (ml/min/1.73m²)
+							</Label>
+							<Input
+								placeholder="e.g. 85"
+								value={nephrologyData.currentEgfr}
+								onChange={(e) =>
+									setNephrologyData((prev) => ({
+										...prev,
+										currentEgfr: e.target.value,
+									}))
+								}
+							/>
+						</div>
+						<div>
+							<Label className="text-sm">Urine ACR (mg/g)</Label>
+							<Input
+								placeholder="e.g. 30"
+								value={nephrologyData.currentAcr}
+								onChange={(e) =>
+									setNephrologyData((prev) => ({
+										...prev,
+										currentAcr: e.target.value,
+									}))
+								}
+							/>
+						</div>
+						<div>
+							<Label className="text-sm">
+								Serum Creatinine (mg/dL)
+							</Label>
+							<Input
+								placeholder="e.g. 1.1"
+								value={nephrologyData.currentCreatinine}
+								onChange={(e) =>
+									setNephrologyData((prev) => ({
+										...prev,
+										currentCreatinine: e.target.value,
+									}))
+								}
+							/>
+						</div>
+					</div>
+
+					{(() => {
+						const egfr = parseFloat(
+							nephrologyData.currentEgfr || "-1"
+						);
+						const acr = parseFloat(
+							nephrologyData.currentAcr || "-1"
+						);
+						const gIdx =
+							egfr >= 90
+								? 0
+								: egfr >= 60
+								? 1
+								: egfr >= 45
+								? 2
+								: egfr >= 30
+								? 3
+								: egfr >= 15
+								? 4
+								: egfr >= 0
+								? 5
+								: -1;
+						const aIdx =
+							acr >= 0 && acr < 30
+								? 0
+								: acr <= 300
+								? 1
+								: acr > 300
+								? 2
+								: -1;
+						const colors = [
+							["#22c55e", "#eab308", "#ef4444"],
+							["#84cc16", "#f59e0b", "#ef4444"],
+							["#f59e0b", "#f97316", "#dc2626"],
+							["#f97316", "#fb923c", "#dc2626"],
+							["#ef4444", "#dc2626", "#b91c1c"],
+							["#b91c1c", "#991b1b", "#7f1d1d"],
+						];
+						return (
+							<div className="overflow-x-auto">
+								<table className="w-full text-xs border">
+									<thead>
+										<tr>
+											<th className="p-2 border bg-gray-50">
+												eGFR↓ / ACR→
+											</th>
+											<th className="p-2 border">
+												A1
+												<div className="text-[10px] text-gray-500">
+													&lt;30
+												</div>
+											</th>
+											<th className="p-2 border">
+												A2
+												<div className="text-[10px] text-gray-500">
+													30–300
+												</div>
+											</th>
+											<th className="p-2 border">
+												A3
+												<div className="text-[10px] text-gray-500">
+													&gt;300
+												</div>
+											</th>
+										</tr>
+									</thead>
+									<tbody>
+										{[
+											"G1 ≥90",
+											"G2 60–89",
+											"G3a 45–59",
+											"G3b 30–44",
+											"G4 15–29",
+											"G5 <15",
+										].map((g, gi) => (
+											<tr key={g}>
+												<td className="p-2 border bg-gray-50">
+													{g}
+												</td>
+												{[0, 1, 2].map((ai) => (
+													<td
+														key={ai}
+														className="p-2 border text-center">
+														<div
+															style={{
+																backgroundColor:
+																	colors[gi][
+																		ai
+																	],
+															}}
+															className={`w-16 h-6 mx-auto rounded ${
+																gi === gIdx &&
+																ai === aIdx
+																	? "ring-2 ring-black"
+																	: ""
+															}`}></div>
+													</td>
+												))}
+											</tr>
+										))}
+									</tbody>
+								</table>
+								<div className="mt-2 text-xs text-gray-600">
+									Creatinine:{" "}
+									{nephrologyData.currentCreatinine || "-"}{" "}
+									mg/dL
+								</div>
+							</div>
+						);
+					})()}
+				</div>
+
 				{isChart ? (
 					<>
 						<ResponsiveContainer
@@ -1118,8 +1319,17 @@ export default function ComprehensiveAssessmentFunctional({
 								}
 								onValueChange={(value) => {
 									if (value === "optimize medications") {
-										// Link to medications management page
-										window.location.href = "#medications";
+										if (onNavigate)
+											onNavigate("medications");
+										else if (
+											typeof window !== "undefined"
+										) {
+											const params = new URLSearchParams(
+												window.location.search
+											);
+											params.set("tab", "medications");
+											window.location.search = `?${params}`;
+										}
 									}
 									handleActionChange(
 										nephrologyAssessment.name,
@@ -1144,6 +1354,176 @@ export default function ComprehensiveAssessmentFunctional({
 									)}
 								</SelectContent>
 							</Select>
+						</div>
+
+						{/* Renal Risk Heatmap (KDIGO) */}
+						<div>
+							<h3 className="text-lg font-semibold mb-3 text-blue-900">
+								Renal Risk Heatmap
+							</h3>
+							<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+								<div>
+									<Label className="text-sm">
+										eGFR (ml/min/1.73m²)
+									</Label>
+									<Input
+										placeholder="e.g. 85"
+										value={nephrologyData.currentEgfr}
+										onChange={(e) =>
+											setNephrologyData((prev) => ({
+												...prev,
+												currentEgfr: e.target.value,
+											}))
+										}
+									/>
+								</div>
+								<div>
+									<Label className="text-sm">
+										Urine ACR (mg/g)
+									</Label>
+									<Input
+										placeholder="e.g. 30"
+										value={nephrologyData.currentAcr}
+										onChange={(e) =>
+											setNephrologyData((prev) => ({
+												...prev,
+												currentAcr: e.target.value,
+											}))
+										}
+									/>
+								</div>
+								<div>
+									<Label className="text-sm">
+										Serum Creatinine (mg/dL)
+									</Label>
+									<Input
+										placeholder="e.g. 1.1"
+										value={nephrologyData.currentCreatinine}
+										onChange={(e) =>
+											setNephrologyData((prev) => ({
+												...prev,
+												currentCreatinine:
+													e.target.value,
+											}))
+										}
+									/>
+								</div>
+							</div>
+
+							{(() => {
+								const egfr = parseFloat(
+									nephrologyData.currentEgfr || "-1"
+								);
+								const acr = parseFloat(
+									nephrologyData.currentAcr || "-1"
+								);
+								const gIdx =
+									egfr >= 90
+										? 0
+										: egfr >= 60
+										? 1
+										: egfr >= 45
+										? 2
+										: egfr >= 30
+										? 3
+										: egfr >= 15
+										? 4
+										: egfr >= 0
+										? 5
+										: -1;
+								const aIdx =
+									acr >= 0 && acr < 30
+										? 0
+										: acr <= 300
+										? 1
+										: acr > 300
+										? 2
+										: -1;
+								const colors = [
+									["#22c55e", "#eab308", "#ef4444"],
+									["#84cc16", "#f59e0b", "#ef4444"],
+									["#f59e0b", "#f97316", "#dc2626"],
+									["#f97316", "#fb923c", "#dc2626"],
+									["#ef4444", "#dc2626", "#b91c1c"],
+									["#b91c1c", "#991b1b", "#7f1d1d"],
+								];
+								return (
+									<div className="overflow-x-auto">
+										<table className="w-full text-xs border">
+											<thead>
+												<tr>
+													<th className="p-2 border bg-gray-50">
+														eGFR↓ / ACR→
+													</th>
+													<th className="p-2 border">
+														A1
+														<div className="text-[10px] text-gray-500">
+															&lt;30
+														</div>
+													</th>
+													<th className="p-2 border">
+														A2
+														<div className="text-[10px] text-gray-500">
+															30–300
+														</div>
+													</th>
+													<th className="p-2 border">
+														A3
+														<div className="text-[10px] text-gray-500">
+															&gt;300
+														</div>
+													</th>
+												</tr>
+											</thead>
+											<tbody>
+												{[
+													"G1 ≥90",
+													"G2 60–89",
+													"G3a 45–59",
+													"G3b 30–44",
+													"G4 15–29",
+													"G5 <15",
+												].map((g, gi) => (
+													<tr key={g}>
+														<td className="p-2 border bg-gray-50">
+															{g}
+														</td>
+														{[0, 1, 2].map((ai) => (
+															<td
+																key={ai}
+																className="p-2 border text-center">
+																<div
+																	style={{
+																		backgroundColor:
+																			colors[
+																				gi
+																			][
+																				ai
+																			],
+																	}}
+																	className={`w-16 h-6 mx-auto rounded ${
+																		gi ===
+																			gIdx &&
+																		ai ===
+																			aIdx
+																			? "ring-2 ring-black"
+																			: ""
+																	}`}></div>
+															</td>
+														))}
+													</tr>
+												))}
+											</tbody>
+										</table>
+										<div className="mt-2 text-xs text-gray-600">
+											Creatinine:{" "}
+											{nephrologyData.currentCreatinine ||
+												"-"}{" "}
+											mg/dL
+										</div>
+									</div>
+								);
+							})()}
 						</div>
 
 						{/* Trend Analysis for Nephrology Specific Metrics */}
@@ -1285,8 +1665,8 @@ export default function ComprehensiveAssessmentFunctional({
 	};
 
 	return (
-		<div className="p-8 bg-gradient-to-br from-gray-50 to-gray-100">
-			<h1 className="text-3xl font-bold text-navy-600 mb-6">
+		<div className="p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-gray-50 to-gray-100">
+			<h1 className="text-2xl sm:text-3xl font-bold text-navy-600 mb-4 sm:mb-6">
 				Comprehensive Assessment of Complications and Comorbidities
 			</h1>
 
@@ -1294,7 +1674,7 @@ export default function ComprehensiveAssessmentFunctional({
 				value={activeTab}
 				onValueChange={setActiveTab}
 				className="w-full">
-				<TabsList className="mb-4 flex-wrap">
+				<TabsList className="mb-3 sm:mb-4 overflow-x-auto whitespace-nowrap w-full">
 					<TabsTrigger value="complications">
 						Complications Assessment
 					</TabsTrigger>
@@ -1305,9 +1685,10 @@ export default function ComprehensiveAssessmentFunctional({
 					<TabsTrigger value="cardiac">
 						Cardiac Assessment
 					</TabsTrigger>
-					<TabsTrigger value="neuro">Neurological</TabsTrigger>
+					<TabsTrigger value="neuro">CVA/Stroke</TabsTrigger>
 					<TabsTrigger value="liver">Liver Assessment</TabsTrigger>
 					<TabsTrigger value="foot">Diabetic Foot</TabsTrigger>
+					<TabsTrigger value="pmr">PMR</TabsTrigger>
 					<TabsTrigger value="mental-health">
 						Mental Health Tracking
 					</TabsTrigger>
@@ -2744,6 +3125,227 @@ export default function ComprehensiveAssessmentFunctional({
 										</div>
 									</div>
 
+									{/* Renal Risk Heatmap (KDIGO) */}
+									<div>
+										<h3 className="text-lg font-semibold mb-3 text-blue-900">
+											Renal Risk Heatmap
+										</h3>
+										<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+											<div>
+												<Label className="text-sm">
+													eGFR (ml/min/1.73m²)
+												</Label>
+												<Input
+													placeholder="e.g. 85"
+													value={
+														nephrologyData.currentEgfr
+													}
+													onChange={(e) =>
+														setNephrologyData(
+															(prev) => ({
+																...prev,
+																currentEgfr:
+																	e.target
+																		.value,
+															})
+														)
+													}
+												/>
+											</div>
+											<div>
+												<Label className="text-sm">
+													Urine ACR (mg/g)
+												</Label>
+												<Input
+													placeholder="e.g. 30"
+													value={
+														nephrologyData.currentAcr
+													}
+													onChange={(e) =>
+														setNephrologyData(
+															(prev) => ({
+																...prev,
+																currentAcr:
+																	e.target
+																		.value,
+															})
+														)
+													}
+												/>
+											</div>
+											<div>
+												<Label className="text-sm">
+													Serum Creatinine (mg/dL)
+												</Label>
+												<Input
+													placeholder="e.g. 1.1"
+													value={
+														nephrologyData.currentCreatinine
+													}
+													onChange={(e) =>
+														setNephrologyData(
+															(prev) => ({
+																...prev,
+																currentCreatinine:
+																	e.target
+																		.value,
+															})
+														)
+													}
+												/>
+											</div>
+										</div>
+
+										{(() => {
+											const egfr = parseFloat(
+												nephrologyData.currentEgfr ||
+													"-1"
+											);
+											const acr = parseFloat(
+												nephrologyData.currentAcr ||
+													"-1"
+											);
+											const gIdx =
+												egfr >= 90
+													? 0
+													: egfr >= 60
+													? 1
+													: egfr >= 45
+													? 2
+													: egfr >= 30
+													? 3
+													: egfr >= 15
+													? 4
+													: egfr >= 0
+													? 5
+													: -1;
+											const aIdx =
+												acr >= 0 && acr < 30
+													? 0
+													: acr <= 300
+													? 1
+													: acr > 300
+													? 2
+													: -1;
+											const colors = [
+												[
+													"#22c55e",
+													"#eab308",
+													"#ef4444",
+												],
+												[
+													"#84cc16",
+													"#f59e0b",
+													"#ef4444",
+												],
+												[
+													"#f59e0b",
+													"#f97316",
+													"#dc2626",
+												],
+												[
+													"#f97316",
+													"#fb923c",
+													"#dc2626",
+												],
+												[
+													"#ef4444",
+													"#dc2626",
+													"#b91c1c",
+												],
+												[
+													"#b91c1c",
+													"#991b1b",
+													"#7f1d1d",
+												],
+											];
+											return (
+												<div className="overflow-x-auto">
+													<table className="w-full text-xs border">
+														<thead>
+															<tr>
+																<th className="p-2 border bg-gray-50">
+																	eGFR↓ / ACR→
+																</th>
+																<th className="p-2 border">
+																	A1
+																	<div className="text-[10px] text-gray-500">
+																		&lt;30
+																	</div>
+																</th>
+																<th className="p-2 border">
+																	A2
+																	<div className="text-[10px] text-gray-500">
+																		30–300
+																	</div>
+																</th>
+																<th className="p-2 border">
+																	A3
+																	<div className="text-[10px] text-gray-500">
+																		&gt;300
+																	</div>
+																</th>
+															</tr>
+														</thead>
+														<tbody>
+															{[
+																"G1 ≥90",
+																"G2 60–89",
+																"G3a 45–59",
+																"G3b 30–44",
+																"G4 15–29",
+																"G5 <15",
+															].map((g, gi) => (
+																<tr key={g}>
+																	<td className="p-2 border bg-gray-50">
+																		{g}
+																	</td>
+																	{[
+																		0, 1, 2,
+																	].map(
+																		(
+																			ai
+																		) => (
+																			<td
+																				key={
+																					ai
+																				}
+																				className="p-2 border text-center">
+																				<div
+																					style={{
+																						backgroundColor:
+																							colors[
+																								gi
+																							][
+																								ai
+																							],
+																					}}
+																					className={`w-16 h-6 mx-auto rounded ${
+																						gi ===
+																							gIdx &&
+																						ai ===
+																							aIdx
+																							? "ring-2 ring-black"
+																							: ""
+																					}`}></div>
+																			</td>
+																		)
+																	)}
+																</tr>
+															))}
+														</tbody>
+													</table>
+													<div className="mt-2 text-xs text-gray-600">
+														Creatinine:{" "}
+														{nephrologyData.currentCreatinine ||
+															"-"}{" "}
+														mg/dL
+													</div>
+												</div>
+											);
+										})()}
+									</div>
+
 									{/* Assessment Form */}
 									<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 										{/* Clinical History */}
@@ -3436,11 +4038,23 @@ export default function ComprehensiveAssessmentFunctional({
 															value ===
 															"optimize-medications"
 														) {
-															// Navigate to medications page
-															if (onNavigate) {
+															if (onNavigate)
 																onNavigate(
 																	"medications"
 																);
+															else if (
+																typeof window !==
+																"undefined"
+															) {
+																const params =
+																	new URLSearchParams(
+																		window.location.search
+																	);
+																params.set(
+																	"tab",
+																	"medications"
+																);
+																window.location.search = `?${params}`;
 															}
 														}
 													}}>
@@ -3603,10 +4217,11 @@ export default function ComprehensiveAssessmentFunctional({
 														}
 														className="p-3 text-left bg-white rounded border hover:border-purple-500 hover:bg-purple-50 transition-colors">
 														<div className="text-sm font-medium">
-															Neurological
+															CVA/Stroke
 														</div>
 														<div className="text-xs text-gray-500">
-															Nerve assessment
+															Stroke/CVA
+															assessment
 														</div>
 													</button>
 													<button
@@ -3930,6 +4545,35 @@ export default function ComprehensiveAssessmentFunctional({
 													Statin
 												</Label>
 											</div>
+											<div className="flex items-center space-x-2 p-2 border rounded">
+												<input
+													aria-label="Ezetimibe"
+													type="checkbox"
+													id="ezetimibe"
+													className="rounded"
+												/>
+												<Label
+													htmlFor="ezetimibe"
+													className="text-sm">
+													Ezetimibe (LDL above
+													goal/statin-intolerant)
+												</Label>
+											</div>
+											<div className="flex items-center space-x-2 p-2 border rounded">
+												<input
+													aria-label="Bempedoic Acid"
+													type="checkbox"
+													id="bempedoic-acid"
+													className="rounded"
+												/>
+												<Label
+													htmlFor="bempedoic-acid"
+													className="text-sm">
+													Bempedoic Acid (if
+													additional LDL lowering
+													needed)
+												</Label>
+											</div>
 										</div>
 									</div>
 
@@ -4008,10 +4652,23 @@ export default function ComprehensiveAssessmentFunctional({
 
 									<Button
 										className="w-full"
-										onClick={() =>
-											(window.location.href =
-												"#medications")
-										}>
+										onClick={() => {
+											if (onNavigate)
+												onNavigate("medications");
+											else if (
+												typeof window !== "undefined"
+											) {
+												const params =
+													new URLSearchParams(
+														window.location.search
+													);
+												params.set(
+													"tab",
+													"medications"
+												);
+												window.location.search = `?${params}`;
+											}
+										}}>
 										<ArrowRight className="h-4 w-4 mr-2" />
 										Open Medications Management Page
 									</Button>
@@ -4096,1350 +4753,1469 @@ export default function ComprehensiveAssessmentFunctional({
 
 				<TabsContent value="neuro">
 					<div className="space-y-6">
-						{/* Neuropathy Assessment */}
-						<Card className="bg-white shadow-lg">
-							<CardHeader>
-								<CardTitle className="text-xl text-navy-600 flex items-center">
-									<Zap className="h-6 w-6 mr-2" />
-									Neuropathy Assessment
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="space-y-6">
-								{/* A. History and Symptoms */}
-								<div className="border rounded-lg p-4">
-									<h3 className="text-lg font-semibold text-blue-700 mb-4">
-										A. History and Symptoms
-									</h3>
-									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-										<div>
-											<Label>
-												Duration of diabetes in years
-											</Label>
-											<Input
-												value={
-													neuropathyHistory.diabetesDuration
-												}
-												onChange={(e) =>
-													setNeuropathyHistory(
-														(prev) => ({
-															...prev,
-															diabetesDuration:
-																e.target.value,
-														})
-													)
-												}
-												placeholder="Can auto-populate"
-												className="mt-2"
-											/>
-										</div>
-										<div className="space-y-4">
-											<div className="flex items-center space-x-2">
-												<input
-													aria-label="Previous amputation"
-													type="checkbox"
-													id="previous-amputation"
-													checked={
-														neuropathyHistory.previousAmputation
+						{/* Neuropathy Assessment (moved to Diabetic Foot per spec) */}
+						{false && (
+							<Card className="bg-white shadow-lg">
+								<CardHeader>
+									<CardTitle className="text-xl text-navy-600 flex items-center">
+										<Zap className="h-6 w-6 mr-2" />
+										Neuropathy Assessment
+									</CardTitle>
+								</CardHeader>
+								<CardContent className="space-y-6">
+									{/* A. History and Symptoms */}
+									<div className="border rounded-lg p-4">
+										<h3 className="text-lg font-semibold text-blue-700 mb-4">
+											A. History and Symptoms
+										</h3>
+										<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+											<div>
+												<Label>
+													Duration of diabetes in
+													years
+												</Label>
+												<Input
+													value={
+														neuropathyHistory.diabetesDuration
 													}
 													onChange={(e) =>
 														setNeuropathyHistory(
 															(prev) => ({
 																...prev,
-																previousAmputation:
+																diabetesDuration:
 																	e.target
-																		.checked,
+																		.value,
 															})
 														)
 													}
-													className="rounded"
+													placeholder="Can auto-populate"
+													className="mt-2"
 												/>
-												<Label htmlFor="previous-amputation">
-													Previous history of
-													amputation
-												</Label>
 											</div>
-											<div className="flex items-center space-x-2">
-												<input
-													aria-label="Diabetic foot surgery"
-													type="checkbox"
-													id="diabetic-foot-surgery"
-													checked={
-														neuropathyHistory.diabeticFootSurgery
-													}
-													onChange={(e) =>
-														setNeuropathyHistory(
-															(prev) => ({
-																...prev,
-																diabeticFootSurgery:
-																	e.target
-																		.checked,
-															})
-														)
-													}
-													className="rounded"
-												/>
-												<Label htmlFor="diabetic-foot-surgery">
-													Diabetic foot surgery
-												</Label>
+											<div className="space-y-4">
+												<div className="flex items-center space-x-2">
+													<input
+														aria-label="Previous amputation"
+														type="checkbox"
+														id="previous-amputation"
+														checked={
+															neuropathyHistory.previousAmputation
+														}
+														onChange={(e) =>
+															setNeuropathyHistory(
+																(prev) => ({
+																	...prev,
+																	previousAmputation:
+																		e.target
+																			.checked,
+																})
+															)
+														}
+														className="rounded"
+													/>
+													<Label htmlFor="previous-amputation">
+														Previous history of
+														amputation
+													</Label>
+												</div>
+												<div className="flex items-center space-x-2">
+													<input
+														aria-label="Diabetic foot surgery"
+														type="checkbox"
+														id="diabetic-foot-surgery"
+														checked={
+															neuropathyHistory.diabeticFootSurgery
+														}
+														onChange={(e) =>
+															setNeuropathyHistory(
+																(prev) => ({
+																	...prev,
+																	diabeticFootSurgery:
+																		e.target
+																			.checked,
+																})
+															)
+														}
+														className="rounded"
+													/>
+													<Label htmlFor="diabetic-foot-surgery">
+														Diabetic foot surgery
+													</Label>
+												</div>
+											</div>
+										</div>
+
+										<div className="mt-6 space-y-4">
+											<div>
+												<div className="flex items-center space-x-2 mb-2">
+													<input
+														aria-label="Positive symptoms"
+														type="checkbox"
+														id="positive-symptoms"
+														checked={
+															neuropathyHistory.positiveSymptoms
+														}
+														onChange={(e) =>
+															setNeuropathyHistory(
+																(prev) => ({
+																	...prev,
+																	positiveSymptoms:
+																		e.target
+																			.checked,
+																})
+															)
+														}
+														className="rounded"
+													/>
+													<Label htmlFor="positive-symptoms">
+														Positive symptoms
+														(burning pain, tingling,
+														paresthesia, pricking
+														sensation)
+													</Label>
+												</div>
+												{neuropathyHistory.positiveSymptoms && (
+													<Select
+														value={
+															neuropathyHistory.positiveLocation
+														}
+														onValueChange={(
+															value
+														) =>
+															setNeuropathyHistory(
+																(prev) => ({
+																	...prev,
+																	positiveLocation:
+																		value,
+																})
+															)
+														}>
+														<SelectTrigger className="ml-6 w-48">
+															<SelectValue placeholder="Select location" />
+														</SelectTrigger>
+														<SelectContent>
+															<SelectItem value="upper-limb">
+																Upper limb
+															</SelectItem>
+															<SelectItem value="lower-limb">
+																Lower limb
+															</SelectItem>
+															<SelectItem value="both">
+																Both
+															</SelectItem>
+														</SelectContent>
+													</Select>
+												)}
+											</div>
+
+											<div>
+												<div className="flex items-center space-x-2 mb-2">
+													<input
+														aria-label="Negative symptoms"
+														type="checkbox"
+														id="negative-symptoms"
+														checked={
+															neuropathyHistory.negativeSymptoms
+														}
+														onChange={(e) =>
+															setNeuropathyHistory(
+																(prev) => ({
+																	...prev,
+																	negativeSymptoms:
+																		e.target
+																			.checked,
+																})
+															)
+														}
+														className="rounded"
+													/>
+													<Label htmlFor="negative-symptoms">
+														Negative symptoms
+														(numbness, loss of
+														power/weakness/function,
+														slippage of chappals)
+													</Label>
+												</div>
+												{neuropathyHistory.negativeSymptoms && (
+													<Select
+														value={
+															neuropathyHistory.negativeLocation
+														}
+														onValueChange={(
+															value
+														) =>
+															setNeuropathyHistory(
+																(prev) => ({
+																	...prev,
+																	negativeLocation:
+																		value,
+																})
+															)
+														}>
+														<SelectTrigger className="ml-6 w-48">
+															<SelectValue placeholder="Select location" />
+														</SelectTrigger>
+														<SelectContent>
+															<SelectItem value="upper-limb">
+																Upper limb
+															</SelectItem>
+															<SelectItem value="lower-limb">
+																Lower limb
+															</SelectItem>
+															<SelectItem value="both">
+																Both
+															</SelectItem>
+														</SelectContent>
+													</Select>
+												)}
+											</div>
+
+											<div>
+												<div className="flex items-center space-x-2 mb-2">
+													<input
+														aria-label="Carpal tunnel syndrome"
+														type="checkbox"
+														id="carpal-tunnel"
+														checked={
+															neuropathyHistory.carpalTunnel
+														}
+														onChange={(e) =>
+															setNeuropathyHistory(
+																(prev) => ({
+																	...prev,
+																	carpalTunnel:
+																		e.target
+																			.checked,
+																})
+															)
+														}
+														className="rounded"
+													/>
+													<Label htmlFor="carpal-tunnel">
+														Features suggestive of
+														carpal tunnel syndrome
+													</Label>
+												</div>
+												{neuropathyHistory.carpalTunnel && (
+													<Select
+														value={
+															neuropathyHistory.carpalSide
+														}
+														onValueChange={(
+															value
+														) =>
+															setNeuropathyHistory(
+																(prev) => ({
+																	...prev,
+																	carpalSide:
+																		value,
+																})
+															)
+														}>
+														<SelectTrigger className="ml-6 w-48">
+															<SelectValue placeholder="Select side" />
+														</SelectTrigger>
+														<SelectContent>
+															<SelectItem value="right">
+																Right side
+															</SelectItem>
+															<SelectItem value="left">
+																Left side
+															</SelectItem>
+														</SelectContent>
+													</Select>
+												)}
 											</div>
 										</div>
 									</div>
 
-									<div className="mt-6 space-y-4">
-										<div>
-											<div className="flex items-center space-x-2 mb-2">
-												<input
-													aria-label="Positive symptoms"
-													type="checkbox"
-													id="positive-symptoms"
-													checked={
-														neuropathyHistory.positiveSymptoms
+									{/* B. Examination */}
+									<div className="border rounded-lg p-4">
+										<h3 className="text-lg font-semibold text-blue-700 mb-4">
+											B. Examination
+										</h3>
+
+										{/* Muscle Power Assessment */}
+										<div className="mb-6">
+											<h4 className="font-semibold mb-3">
+												1. Muscle power assessment
+											</h4>
+											<div className="overflow-x-auto">
+												<table className="w-full border-collapse border border-gray-300">
+													<thead>
+														<tr className="bg-gray-50">
+															<th className="border border-gray-300 p-2"></th>
+															<th className="border border-gray-300 p-2">
+																Right
+															</th>
+															<th className="border border-gray-300 p-2">
+																Left
+															</th>
+														</tr>
+													</thead>
+													<tbody>
+														<tr>
+															<td
+																rowSpan={2}
+																className="border border-gray-300 p-2 font-medium">
+																Upper limb
+															</td>
+															<td className="border border-gray-300 p-2">
+																<div className="flex items-center space-x-2">
+																	<span className="text-sm">
+																		Proximal:
+																	</span>
+																	<Select
+																		value={
+																			neuropathyExamination.muscleRightUpperProximal
+																		}
+																		onValueChange={(
+																			value
+																		) =>
+																			setNeuropathyExamination(
+																				(
+																					prev
+																				) => ({
+																					...prev,
+																					muscleRightUpperProximal:
+																						value,
+																				})
+																			)
+																		}>
+																		<SelectTrigger className="w-20">
+																			<SelectValue />
+																		</SelectTrigger>
+																		<SelectContent>
+																			<SelectItem value="0/5">
+																				0/5
+																			</SelectItem>
+																			<SelectItem value="1/5">
+																				1/5
+																			</SelectItem>
+																			<SelectItem value="2/5">
+																				2/5
+																			</SelectItem>
+																			<SelectItem value="3/5">
+																				3/5
+																			</SelectItem>
+																			<SelectItem value="4/5">
+																				4/5
+																			</SelectItem>
+																			<SelectItem value="5/5">
+																				5/5
+																			</SelectItem>
+																		</SelectContent>
+																	</Select>
+																</div>
+															</td>
+															<td className="border border-gray-300 p-2">
+																<div className="flex items-center space-x-2">
+																	<span className="text-sm">
+																		Proximal:
+																	</span>
+																	<Select
+																		value={
+																			neuropathyExamination.muscleLeftUpperProximal
+																		}
+																		onValueChange={(
+																			value
+																		) =>
+																			setNeuropathyExamination(
+																				(
+																					prev
+																				) => ({
+																					...prev,
+																					muscleLeftUpperProximal:
+																						value,
+																				})
+																			)
+																		}>
+																		<SelectTrigger className="w-20">
+																			<SelectValue />
+																		</SelectTrigger>
+																		<SelectContent>
+																			<SelectItem value="0/5">
+																				0/5
+																			</SelectItem>
+																			<SelectItem value="1/5">
+																				1/5
+																			</SelectItem>
+																			<SelectItem value="2/5">
+																				2/5
+																			</SelectItem>
+																			<SelectItem value="3/5">
+																				3/5
+																			</SelectItem>
+																			<SelectItem value="4/5">
+																				4/5
+																			</SelectItem>
+																			<SelectItem value="5/5">
+																				5/5
+																			</SelectItem>
+																		</SelectContent>
+																	</Select>
+																</div>
+															</td>
+														</tr>
+														<tr>
+															<td className="border border-gray-300 p-2">
+																<div className="flex items-center space-x-2">
+																	<span className="text-sm">
+																		Distal:
+																	</span>
+																	<Select
+																		value={
+																			neuropathyExamination.muscleRightUpperDistal
+																		}
+																		onValueChange={(
+																			value
+																		) =>
+																			setNeuropathyExamination(
+																				(
+																					prev
+																				) => ({
+																					...prev,
+																					muscleRightUpperDistal:
+																						value,
+																				})
+																			)
+																		}>
+																		<SelectTrigger className="w-20">
+																			<SelectValue />
+																		</SelectTrigger>
+																		<SelectContent>
+																			<SelectItem value="0/5">
+																				0/5
+																			</SelectItem>
+																			<SelectItem value="1/5">
+																				1/5
+																			</SelectItem>
+																			<SelectItem value="2/5">
+																				2/5
+																			</SelectItem>
+																			<SelectItem value="3/5">
+																				3/5
+																			</SelectItem>
+																			<SelectItem value="4/5">
+																				4/5
+																			</SelectItem>
+																			<SelectItem value="5/5">
+																				5/5
+																			</SelectItem>
+																		</SelectContent>
+																	</Select>
+																</div>
+															</td>
+															<td className="border border-gray-300 p-2">
+																<div className="flex items-center space-x-2">
+																	<span className="text-sm">
+																		Distal:
+																	</span>
+																	<Select
+																		value={
+																			neuropathyExamination.muscleLeftUpperDistal
+																		}
+																		onValueChange={(
+																			value
+																		) =>
+																			setNeuropathyExamination(
+																				(
+																					prev
+																				) => ({
+																					...prev,
+																					muscleLeftUpperDistal:
+																						value,
+																				})
+																			)
+																		}>
+																		<SelectTrigger className="w-20">
+																			<SelectValue />
+																		</SelectTrigger>
+																		<SelectContent>
+																			<SelectItem value="0/5">
+																				0/5
+																			</SelectItem>
+																			<SelectItem value="1/5">
+																				1/5
+																			</SelectItem>
+																			<SelectItem value="2/5">
+																				2/5
+																			</SelectItem>
+																			<SelectItem value="3/5">
+																				3/5
+																			</SelectItem>
+																			<SelectItem value="4/5">
+																				4/5
+																			</SelectItem>
+																			<SelectItem value="5/5">
+																				5/5
+																			</SelectItem>
+																		</SelectContent>
+																	</Select>
+																</div>
+															</td>
+														</tr>
+														<tr>
+															<td
+																rowSpan={2}
+																className="border border-gray-300 p-2 font-medium">
+																Lower limb
+															</td>
+															<td className="border border-gray-300 p-2">
+																<div className="flex items-center space-x-2">
+																	<span className="text-sm">
+																		Proximal:
+																	</span>
+																	<Select
+																		value={
+																			neuropathyExamination.muscleRightLowerProximal
+																		}
+																		onValueChange={(
+																			value
+																		) =>
+																			setNeuropathyExamination(
+																				(
+																					prev
+																				) => ({
+																					...prev,
+																					muscleRightLowerProximal:
+																						value,
+																				})
+																			)
+																		}>
+																		<SelectTrigger className="w-20">
+																			<SelectValue />
+																		</SelectTrigger>
+																		<SelectContent>
+																			<SelectItem value="0/5">
+																				0/5
+																			</SelectItem>
+																			<SelectItem value="1/5">
+																				1/5
+																			</SelectItem>
+																			<SelectItem value="2/5">
+																				2/5
+																			</SelectItem>
+																			<SelectItem value="3/5">
+																				3/5
+																			</SelectItem>
+																			<SelectItem value="4/5">
+																				4/5
+																			</SelectItem>
+																			<SelectItem value="5/5">
+																				5/5
+																			</SelectItem>
+																		</SelectContent>
+																	</Select>
+																</div>
+															</td>
+															<td className="border border-gray-300 p-2">
+																<div className="flex items-center space-x-2">
+																	<span className="text-sm">
+																		Proximal:
+																	</span>
+																	<Select
+																		value={
+																			neuropathyExamination.muscleLeftLowerProximal
+																		}
+																		onValueChange={(
+																			value
+																		) =>
+																			setNeuropathyExamination(
+																				(
+																					prev
+																				) => ({
+																					...prev,
+																					muscleLeftLowerProximal:
+																						value,
+																				})
+																			)
+																		}>
+																		<SelectTrigger className="w-20">
+																			<SelectValue />
+																		</SelectTrigger>
+																		<SelectContent>
+																			<SelectItem value="0/5">
+																				0/5
+																			</SelectItem>
+																			<SelectItem value="1/5">
+																				1/5
+																			</SelectItem>
+																			<SelectItem value="2/5">
+																				2/5
+																			</SelectItem>
+																			<SelectItem value="3/5">
+																				3/5
+																			</SelectItem>
+																			<SelectItem value="4/5">
+																				4/5
+																			</SelectItem>
+																			<SelectItem value="5/5">
+																				5/5
+																			</SelectItem>
+																		</SelectContent>
+																	</Select>
+																</div>
+															</td>
+														</tr>
+														<tr>
+															<td className="border border-gray-300 p-2">
+																<div className="flex items-center space-x-2">
+																	<span className="text-sm">
+																		Distal:
+																	</span>
+																	<Select
+																		value={
+																			neuropathyExamination.muscleRightLowerDistal
+																		}
+																		onValueChange={(
+																			value
+																		) =>
+																			setNeuropathyExamination(
+																				(
+																					prev
+																				) => ({
+																					...prev,
+																					muscleRightLowerDistal:
+																						value,
+																				})
+																			)
+																		}>
+																		<SelectTrigger className="w-20">
+																			<SelectValue />
+																		</SelectTrigger>
+																		<SelectContent>
+																			<SelectItem value="0/5">
+																				0/5
+																			</SelectItem>
+																			<SelectItem value="1/5">
+																				1/5
+																			</SelectItem>
+																			<SelectItem value="2/5">
+																				2/5
+																			</SelectItem>
+																			<SelectItem value="3/5">
+																				3/5
+																			</SelectItem>
+																			<SelectItem value="4/5">
+																				4/5
+																			</SelectItem>
+																			<SelectItem value="5/5">
+																				5/5
+																			</SelectItem>
+																		</SelectContent>
+																	</Select>
+																</div>
+															</td>
+															<td className="border border-gray-300 p-2">
+																<div className="flex items-center space-x-2">
+																	<span className="text-sm">
+																		Distal:
+																	</span>
+																	<Select
+																		value={
+																			neuropathyExamination.muscleLeftLowerDistal
+																		}
+																		onValueChange={(
+																			value
+																		) =>
+																			setNeuropathyExamination(
+																				(
+																					prev
+																				) => ({
+																					...prev,
+																					muscleLeftLowerDistal:
+																						value,
+																				})
+																			)
+																		}>
+																		<SelectTrigger className="w-20">
+																			<SelectValue />
+																		</SelectTrigger>
+																		<SelectContent>
+																			<SelectItem value="0/5">
+																				0/5
+																			</SelectItem>
+																			<SelectItem value="1/5">
+																				1/5
+																			</SelectItem>
+																			<SelectItem value="2/5">
+																				2/5
+																			</SelectItem>
+																			<SelectItem value="3/5">
+																				3/5
+																			</SelectItem>
+																			<SelectItem value="4/5">
+																				4/5
+																			</SelectItem>
+																			<SelectItem value="5/5">
+																				5/5
+																			</SelectItem>
+																		</SelectContent>
+																	</Select>
+																</div>
+															</td>
+														</tr>
+													</tbody>
+												</table>
+											</div>
+											<div className="mt-2">
+												<Label>Personal notes:</Label>
+												<Textarea
+													value={
+														neuropathyExamination.musclePersonalNotes
 													}
 													onChange={(e) =>
-														setNeuropathyHistory(
+														setNeuropathyExamination(
 															(prev) => ({
 																...prev,
-																positiveSymptoms:
+																musclePersonalNotes:
 																	e.target
-																		.checked,
+																		.value,
 															})
 														)
 													}
-													className="rounded"
+													placeholder="Add personal notes about muscle power assessment"
+													className="mt-1"
+													rows={2}
 												/>
-												<Label htmlFor="positive-symptoms">
-													Positive symptoms (burning
-													pain, tingling, paresthesia,
-													pricking sensation)
-												</Label>
 											</div>
-											{neuropathyHistory.positiveSymptoms && (
-												<Select
+										</div>
+
+										{/* Deep Tendon Reflexes */}
+										<div className="mb-6">
+											<h4 className="font-semibold mb-3">
+												2. Deep tendon reflexes
+											</h4>
+											<div className="overflow-x-auto">
+												<table className="w-full border-collapse border border-gray-300">
+													<thead>
+														<tr className="bg-gray-50">
+															<th className="border border-gray-300 p-2"></th>
+															<th className="border border-gray-300 p-2">
+																Biceps
+															</th>
+															<th className="border border-gray-300 p-2">
+																Triceps
+															</th>
+															<th className="border border-gray-300 p-2">
+																Supinator
+															</th>
+															<th className="border border-gray-300 p-2">
+																Knee
+															</th>
+															<th className="border border-gray-300 p-2">
+																Ankle
+															</th>
+															<th className="border border-gray-300 p-2">
+																Plantar
+															</th>
+														</tr>
+													</thead>
+													<tbody>
+														<tr>
+															<td className="border border-gray-300 p-2 font-medium">
+																Right
+															</td>
+															<td className="border border-gray-300 p-2">
+																<Select
+																	value={
+																		neuropathyExamination.reflexBicepsRight
+																	}
+																	onValueChange={(
+																		value
+																	) =>
+																		setNeuropathyExamination(
+																			(
+																				prev
+																			) => ({
+																				...prev,
+																				reflexBicepsRight:
+																					value,
+																			})
+																		)
+																	}>
+																	<SelectTrigger className="w-16">
+																		<SelectValue />
+																	</SelectTrigger>
+																	<SelectContent>
+																		<SelectItem value="0">
+																			0
+																		</SelectItem>
+																		<SelectItem value="1+">
+																			1+
+																		</SelectItem>
+																		<SelectItem value="2+">
+																			2+
+																		</SelectItem>
+																		<SelectItem value="3+">
+																			3+
+																		</SelectItem>
+																		<SelectItem value="4+">
+																			4+
+																		</SelectItem>
+																	</SelectContent>
+																</Select>
+															</td>
+															<td className="border border-gray-300 p-2">
+																<Select
+																	value={
+																		neuropathyExamination.reflexTricepsRight
+																	}
+																	onValueChange={(
+																		value
+																	) =>
+																		setNeuropathyExamination(
+																			(
+																				prev
+																			) => ({
+																				...prev,
+																				reflexTricepsRight:
+																					value,
+																			})
+																		)
+																	}>
+																	<SelectTrigger className="w-16">
+																		<SelectValue />
+																	</SelectTrigger>
+																	<SelectContent>
+																		<SelectItem value="0">
+																			0
+																		</SelectItem>
+																		<SelectItem value="1+">
+																			1+
+																		</SelectItem>
+																		<SelectItem value="2+">
+																			2+
+																		</SelectItem>
+																		<SelectItem value="3+">
+																			3+
+																		</SelectItem>
+																		<SelectItem value="4+">
+																			4+
+																		</SelectItem>
+																	</SelectContent>
+																</Select>
+															</td>
+															<td className="border border-gray-300 p-2">
+																<Select
+																	value={
+																		neuropathyExamination.reflexSupinatorRight
+																	}
+																	onValueChange={(
+																		value
+																	) =>
+																		setNeuropathyExamination(
+																			(
+																				prev
+																			) => ({
+																				...prev,
+																				reflexSupinatorRight:
+																					value,
+																			})
+																		)
+																	}>
+																	<SelectTrigger className="w-16">
+																		<SelectValue />
+																	</SelectTrigger>
+																	<SelectContent>
+																		<SelectItem value="0">
+																			0
+																		</SelectItem>
+																		<SelectItem value="1+">
+																			1+
+																		</SelectItem>
+																		<SelectItem value="2+">
+																			2+
+																		</SelectItem>
+																		<SelectItem value="3+">
+																			3+
+																		</SelectItem>
+																		<SelectItem value="4+">
+																			4+
+																		</SelectItem>
+																	</SelectContent>
+																</Select>
+															</td>
+															<td className="border border-gray-300 p-2">
+																<Select
+																	value={
+																		neuropathyExamination.reflexKneeRight
+																	}
+																	onValueChange={(
+																		value
+																	) =>
+																		setNeuropathyExamination(
+																			(
+																				prev
+																			) => ({
+																				...prev,
+																				reflexKneeRight:
+																					value,
+																			})
+																		)
+																	}>
+																	<SelectTrigger className="w-16">
+																		<SelectValue />
+																	</SelectTrigger>
+																	<SelectContent>
+																		<SelectItem value="0">
+																			0
+																		</SelectItem>
+																		<SelectItem value="1+">
+																			1+
+																		</SelectItem>
+																		<SelectItem value="2+">
+																			2+
+																		</SelectItem>
+																		<SelectItem value="3+">
+																			3+
+																		</SelectItem>
+																		<SelectItem value="4+">
+																			4+
+																		</SelectItem>
+																	</SelectContent>
+																</Select>
+															</td>
+															<td className="border border-gray-300 p-2">
+																<Select
+																	value={
+																		neuropathyExamination.reflexAnkleRight
+																	}
+																	onValueChange={(
+																		value
+																	) =>
+																		setNeuropathyExamination(
+																			(
+																				prev
+																			) => ({
+																				...prev,
+																				reflexAnkleRight:
+																					value,
+																			})
+																		)
+																	}>
+																	<SelectTrigger className="w-16">
+																		<SelectValue />
+																	</SelectTrigger>
+																	<SelectContent>
+																		<SelectItem value="0">
+																			0
+																		</SelectItem>
+																		<SelectItem value="1+">
+																			1+
+																		</SelectItem>
+																		<SelectItem value="2+">
+																			2+
+																		</SelectItem>
+																		<SelectItem value="3+">
+																			3+
+																		</SelectItem>
+																		<SelectItem value="4+">
+																			4+
+																		</SelectItem>
+																	</SelectContent>
+																</Select>
+															</td>
+															<td className="border border-gray-300 p-2">
+																<Select
+																	value={
+																		neuropathyExamination.reflexPlantarRight
+																	}
+																	onValueChange={(
+																		value
+																	) =>
+																		setNeuropathyExamination(
+																			(
+																				prev
+																			) => ({
+																				...prev,
+																				reflexPlantarRight:
+																					value,
+																			})
+																		)
+																	}>
+																	<SelectTrigger className="w-20">
+																		<SelectValue />
+																	</SelectTrigger>
+																	<SelectContent>
+																		<SelectItem value="extensor">
+																			Extensor
+																		</SelectItem>
+																		<SelectItem value="flexor">
+																			Flexor
+																		</SelectItem>
+																	</SelectContent>
+																</Select>
+															</td>
+														</tr>
+														<tr>
+															<td className="border border-gray-300 p-2 font-medium">
+																Left
+															</td>
+															<td className="border border-gray-300 p-2">
+																<Select
+																	value={
+																		neuropathyExamination.reflexBicepsLeft
+																	}
+																	onValueChange={(
+																		value
+																	) =>
+																		setNeuropathyExamination(
+																			(
+																				prev
+																			) => ({
+																				...prev,
+																				reflexBicepsLeft:
+																					value,
+																			})
+																		)
+																	}>
+																	<SelectTrigger className="w-16">
+																		<SelectValue />
+																	</SelectTrigger>
+																	<SelectContent>
+																		<SelectItem value="0">
+																			0
+																		</SelectItem>
+																		<SelectItem value="1+">
+																			1+
+																		</SelectItem>
+																		<SelectItem value="2+">
+																			2+
+																		</SelectItem>
+																		<SelectItem value="3+">
+																			3+
+																		</SelectItem>
+																		<SelectItem value="4+">
+																			4+
+																		</SelectItem>
+																	</SelectContent>
+																</Select>
+															</td>
+															<td className="border border-gray-300 p-2">
+																<Select
+																	value={
+																		neuropathyExamination.reflexTricepsLeft
+																	}
+																	onValueChange={(
+																		value
+																	) =>
+																		setNeuropathyExamination(
+																			(
+																				prev
+																			) => ({
+																				...prev,
+																				reflexTricepsLeft:
+																					value,
+																			})
+																		)
+																	}>
+																	<SelectTrigger className="w-16">
+																		<SelectValue />
+																	</SelectTrigger>
+																	<SelectContent>
+																		<SelectItem value="0">
+																			0
+																		</SelectItem>
+																		<SelectItem value="1+">
+																			1+
+																		</SelectItem>
+																		<SelectItem value="2+">
+																			2+
+																		</SelectItem>
+																		<SelectItem value="3+">
+																			3+
+																		</SelectItem>
+																		<SelectItem value="4+">
+																			4+
+																		</SelectItem>
+																	</SelectContent>
+																</Select>
+															</td>
+															<td className="border border-gray-300 p-2">
+																<Select
+																	value={
+																		neuropathyExamination.reflexSupinatorLeft
+																	}
+																	onValueChange={(
+																		value
+																	) =>
+																		setNeuropathyExamination(
+																			(
+																				prev
+																			) => ({
+																				...prev,
+																				reflexSupinatorLeft:
+																					value,
+																			})
+																		)
+																	}>
+																	<SelectTrigger className="w-16">
+																		<SelectValue />
+																	</SelectTrigger>
+																	<SelectContent>
+																		<SelectItem value="0">
+																			0
+																		</SelectItem>
+																		<SelectItem value="1+">
+																			1+
+																		</SelectItem>
+																		<SelectItem value="2+">
+																			2+
+																		</SelectItem>
+																		<SelectItem value="3+">
+																			3+
+																		</SelectItem>
+																		<SelectItem value="4+">
+																			4+
+																		</SelectItem>
+																	</SelectContent>
+																</Select>
+															</td>
+															<td className="border border-gray-300 p-2">
+																<Select
+																	value={
+																		neuropathyExamination.reflexKneeLeft
+																	}
+																	onValueChange={(
+																		value
+																	) =>
+																		setNeuropathyExamination(
+																			(
+																				prev
+																			) => ({
+																				...prev,
+																				reflexKneeLeft:
+																					value,
+																			})
+																		)
+																	}>
+																	<SelectTrigger className="w-16">
+																		<SelectValue />
+																	</SelectTrigger>
+																	<SelectContent>
+																		<SelectItem value="0">
+																			0
+																		</SelectItem>
+																		<SelectItem value="1+">
+																			1+
+																		</SelectItem>
+																		<SelectItem value="2+">
+																			2+
+																		</SelectItem>
+																		<SelectItem value="3+">
+																			3+
+																		</SelectItem>
+																		<SelectItem value="4+">
+																			4+
+																		</SelectItem>
+																	</SelectContent>
+																</Select>
+															</td>
+															<td className="border border-gray-300 p-2">
+																<Select
+																	value={
+																		neuropathyExamination.reflexAnkleLeft
+																	}
+																	onValueChange={(
+																		value
+																	) =>
+																		setNeuropathyExamination(
+																			(
+																				prev
+																			) => ({
+																				...prev,
+																				reflexAnkleLeft:
+																					value,
+																			})
+																		)
+																	}>
+																	<SelectTrigger className="w-16">
+																		<SelectValue />
+																	</SelectTrigger>
+																	<SelectContent>
+																		<SelectItem value="0">
+																			0
+																		</SelectItem>
+																		<SelectItem value="1+">
+																			1+
+																		</SelectItem>
+																		<SelectItem value="2+">
+																			2+
+																		</SelectItem>
+																		<SelectItem value="3+">
+																			3+
+																		</SelectItem>
+																		<SelectItem value="4+">
+																			4+
+																		</SelectItem>
+																	</SelectContent>
+																</Select>
+															</td>
+															<td className="border border-gray-300 p-2">
+																<Select
+																	value={
+																		neuropathyExamination.reflexPlantarLeft
+																	}
+																	onValueChange={(
+																		value
+																	) =>
+																		setNeuropathyExamination(
+																			(
+																				prev
+																			) => ({
+																				...prev,
+																				reflexPlantarLeft:
+																					value,
+																			})
+																		)
+																	}>
+																	<SelectTrigger className="w-20">
+																		<SelectValue />
+																	</SelectTrigger>
+																	<SelectContent>
+																		<SelectItem value="extensor">
+																			Extensor
+																		</SelectItem>
+																		<SelectItem value="flexor">
+																			Flexor
+																		</SelectItem>
+																	</SelectContent>
+																</Select>
+															</td>
+														</tr>
+													</tbody>
+												</table>
+											</div>
+										</div>
+
+										{/* Sensory Assessment */}
+										<div className="mb-6">
+											<h4 className="font-semibold mb-3">
+												3. Sensory Assessment
+											</h4>
+											<p className="text-sm text-gray-600 mb-3">
+												Light touch, pain (pin-prick),
+												Temperature, Joint position
+												sense, Vibration
+											</p>
+											<div className="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-300">
+												<div className="text-center text-gray-500 mb-2">
+													<span className="text-sm">
+														Humanoid Figure Diagrams
+														(Ventral and Dorsal)
+													</span>
+												</div>
+												<div className="text-xs text-gray-500 text-center space-y-1">
+													<p>
+														↓ Downward arrow:
+														Reduced sensation
+													</p>
+													<p>
+														↑ Upward arrow:
+														Increased sensation
+													</p>
+												</div>
+												<div className="mt-4 text-center text-sm text-blue-600">
+													[Interactive sensory mapping
+													would be implemented here]
+												</div>
+											</div>
+											<div className="mt-2">
+												<Label>Personal notes:</Label>
+												<Textarea
 													value={
-														neuropathyHistory.positiveLocation
+														neuropathyExamination.sensoryPersonalNotes
 													}
-													onValueChange={(value) =>
-														setNeuropathyHistory(
+													onChange={(e) =>
+														setNeuropathyExamination(
 															(prev) => ({
 																...prev,
-																positiveLocation:
+																sensoryPersonalNotes:
+																	e.target
+																		.value,
+															})
+														)
+													}
+													placeholder="Add notes about sensory findings"
+													className="mt-1"
+													rows={2}
+												/>
+											</div>
+										</div>
+
+										{/* Additional Tests */}
+										<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+											<div>
+												<Label>
+													4. Rhomberg's test
+												</Label>
+												<Select
+													value={
+														neuropathyExamination.rhombergTest
+													}
+													onValueChange={(value) =>
+														setNeuropathyExamination(
+															(prev) => ({
+																...prev,
+																rhombergTest:
 																	value,
 															})
 														)
 													}>
-													<SelectTrigger className="ml-6 w-48">
-														<SelectValue placeholder="Select location" />
+													<SelectTrigger className="mt-2">
+														<SelectValue placeholder="Select result" />
 													</SelectTrigger>
 													<SelectContent>
-														<SelectItem value="upper-limb">
-															Upper limb
+														<SelectItem value="positive">
+															Positive
 														</SelectItem>
-														<SelectItem value="lower-limb">
-															Lower limb
-														</SelectItem>
-														<SelectItem value="both">
-															Both
+														<SelectItem value="negative">
+															Negative
 														</SelectItem>
 													</SelectContent>
 												</Select>
-											)}
-										</div>
-
-										<div>
-											<div className="flex items-center space-x-2 mb-2">
-												<input
-													aria-label="Negative symptoms"
-													type="checkbox"
-													id="negative-symptoms"
-													checked={
-														neuropathyHistory.negativeSymptoms
+											</div>
+											<div>
+												<Label>5. Gait</Label>
+												<Input
+													value={
+														neuropathyExamination.gait
 													}
 													onChange={(e) =>
-														setNeuropathyHistory(
+														setNeuropathyExamination(
 															(prev) => ({
 																...prev,
-																negativeSymptoms:
-																	e.target
-																		.checked,
+																gait: e.target
+																	.value,
 															})
 														)
 													}
-													className="rounded"
+													placeholder="Normal, ataxic, short steppage, high steppage"
+													className="mt-2"
 												/>
-												<Label htmlFor="negative-symptoms">
-													Negative symptoms (numbness,
-													loss of
-													power/weakness/function,
-													slippage of chappals)
-												</Label>
 											</div>
-											{neuropathyHistory.negativeSymptoms && (
+										</div>
+									</div>
+
+									{/* C. Order Tests */}
+									<div className="border rounded-lg p-4">
+										<h3 className="text-lg font-semibold text-blue-700 mb-4">
+											C. Order Tests
+										</h3>
+										<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+											<div>
+												<Label>
+													Select tests to order:
+												</Label>
 												<Select
-													value={
-														neuropathyHistory.negativeLocation
-													}
 													onValueChange={(value) =>
-														setNeuropathyHistory(
-															(prev) => ({
+														setNeuropathyTests(
+															(prev) => [
 																...prev,
-																negativeLocation:
-																	value,
-															})
+																value,
+															]
 														)
 													}>
-													<SelectTrigger className="ml-6 w-48">
-														<SelectValue placeholder="Select location" />
+													<SelectTrigger className="mt-2">
+														<SelectValue placeholder="Select test" />
 													</SelectTrigger>
 													<SelectContent>
-														<SelectItem value="upper-limb">
-															Upper limb
+														<SelectItem value="FBS">
+															FBS
 														</SelectItem>
-														<SelectItem value="lower-limb">
-															Lower limb
+														<SelectItem value="PPBS">
+															PPBS
 														</SelectItem>
-														<SelectItem value="both">
-															Both
+														<SelectItem value="HbA1c">
+															HbA1c
+														</SelectItem>
+														<SelectItem value="HIV">
+															HIV
+														</SelectItem>
+														<SelectItem value="Vitamin B12">
+															Vitamin B12
+														</SelectItem>
+														<SelectItem value="TSH">
+															TSH
+														</SelectItem>
+														<SelectItem value="Lipid profile">
+															Lipid profile
+														</SelectItem>
+														<SelectItem value="Nerve conduction study">
+															Nerve conduction
+															study
+														</SelectItem>
+														<SelectItem value="Sudoscan">
+															Sudoscan
+														</SelectItem>
+														<SelectItem value="CTS protocol">
+															CTS protocol
+														</SelectItem>
+														<SelectItem value="MRI - Whole spine">
+															MRI - Whole spine
+														</SelectItem>
+														<SelectItem value="MRI - C spine">
+															MRI - C spine
+														</SelectItem>
+														<SelectItem value="MRI - LS spine">
+															MRI - LS spine
+														</SelectItem>
+														<SelectItem value="MRI - Plexus study">
+															MRI - Plexus study
 														</SelectItem>
 													</SelectContent>
 												</Select>
-											)}
+												{neuropathyTests.length > 0 && (
+													<div className="mt-2 space-y-1">
+														{neuropathyTests.map(
+															(test, index) => (
+																<div
+																	key={index}
+																	className="flex items-center justify-between bg-blue-50 p-2 rounded">
+																	<span className="text-sm">
+																		{test}
+																	</span>
+																	<Button
+																		size="sm"
+																		variant="ghost"
+																		onClick={() =>
+																			setNeuropathyTests(
+																				(
+																					prev
+																				) =>
+																					prev.filter(
+																						(
+																							_,
+																							i
+																						) =>
+																							i !==
+																							index
+																					)
+																			)
+																		}>
+																		<X className="h-3 w-3" />
+																	</Button>
+																</div>
+															)
+														)}
+													</div>
+												)}
+											</div>
 										</div>
+									</div>
 
+									{/* D. Referrals */}
+									<div className="border rounded-lg p-4">
+										<h3 className="text-lg font-semibold text-blue-700 mb-4">
+											D. Referrals
+										</h3>
 										<div>
-											<div className="flex items-center space-x-2 mb-2">
-												<input
-													aria-label="Carpal tunnel syndrome"
-													type="checkbox"
-													id="carpal-tunnel"
-													checked={
-														neuropathyHistory.carpalTunnel
-													}
-													onChange={(e) =>
-														setNeuropathyHistory(
-															(prev) => ({
-																...prev,
-																carpalTunnel:
-																	e.target
-																		.checked,
-															})
-														)
-													}
-													className="rounded"
-												/>
-												<Label htmlFor="carpal-tunnel">
-													Features suggestive of
-													carpal tunnel syndrome
-												</Label>
-											</div>
-											{neuropathyHistory.carpalTunnel && (
-												<Select
-													value={
-														neuropathyHistory.carpalSide
-													}
-													onValueChange={(value) =>
-														setNeuropathyHistory(
-															(prev) => ({
-																...prev,
-																carpalSide:
-																	value,
-															})
-														)
-													}>
-													<SelectTrigger className="ml-6 w-48">
-														<SelectValue placeholder="Select side" />
-													</SelectTrigger>
-													<SelectContent>
-														<SelectItem value="right">
-															Right side
-														</SelectItem>
-														<SelectItem value="left">
-															Left side
-														</SelectItem>
-													</SelectContent>
-												</Select>
-											)}
-										</div>
-									</div>
-								</div>
-
-								{/* B. Examination */}
-								<div className="border rounded-lg p-4">
-									<h3 className="text-lg font-semibold text-blue-700 mb-4">
-										B. Examination
-									</h3>
-
-									{/* Muscle Power Assessment */}
-									<div className="mb-6">
-										<h4 className="font-semibold mb-3">
-											1. Muscle power assessment
-										</h4>
-										<div className="overflow-x-auto">
-											<table className="w-full border-collapse border border-gray-300">
-												<thead>
-													<tr className="bg-gray-50">
-														<th className="border border-gray-300 p-2"></th>
-														<th className="border border-gray-300 p-2">
-															Right
-														</th>
-														<th className="border border-gray-300 p-2">
-															Left
-														</th>
-													</tr>
-												</thead>
-												<tbody>
-													<tr>
-														<td
-															rowSpan={2}
-															className="border border-gray-300 p-2 font-medium">
-															Upper limb
-														</td>
-														<td className="border border-gray-300 p-2">
-															<div className="flex items-center space-x-2">
-																<span className="text-sm">
-																	Proximal:
-																</span>
-																<Select
-																	value={
-																		neuropathyExamination.muscleRightUpperProximal
-																	}
-																	onValueChange={(
-																		value
-																	) =>
-																		setNeuropathyExamination(
-																			(
-																				prev
-																			) => ({
-																				...prev,
-																				muscleRightUpperProximal:
-																					value,
-																			})
-																		)
-																	}>
-																	<SelectTrigger className="w-20">
-																		<SelectValue />
-																	</SelectTrigger>
-																	<SelectContent>
-																		<SelectItem value="0/5">
-																			0/5
-																		</SelectItem>
-																		<SelectItem value="1/5">
-																			1/5
-																		</SelectItem>
-																		<SelectItem value="2/5">
-																			2/5
-																		</SelectItem>
-																		<SelectItem value="3/5">
-																			3/5
-																		</SelectItem>
-																		<SelectItem value="4/5">
-																			4/5
-																		</SelectItem>
-																		<SelectItem value="5/5">
-																			5/5
-																		</SelectItem>
-																	</SelectContent>
-																</Select>
-															</div>
-														</td>
-														<td className="border border-gray-300 p-2">
-															<div className="flex items-center space-x-2">
-																<span className="text-sm">
-																	Proximal:
-																</span>
-																<Select
-																	value={
-																		neuropathyExamination.muscleLeftUpperProximal
-																	}
-																	onValueChange={(
-																		value
-																	) =>
-																		setNeuropathyExamination(
-																			(
-																				prev
-																			) => ({
-																				...prev,
-																				muscleLeftUpperProximal:
-																					value,
-																			})
-																		)
-																	}>
-																	<SelectTrigger className="w-20">
-																		<SelectValue />
-																	</SelectTrigger>
-																	<SelectContent>
-																		<SelectItem value="0/5">
-																			0/5
-																		</SelectItem>
-																		<SelectItem value="1/5">
-																			1/5
-																		</SelectItem>
-																		<SelectItem value="2/5">
-																			2/5
-																		</SelectItem>
-																		<SelectItem value="3/5">
-																			3/5
-																		</SelectItem>
-																		<SelectItem value="4/5">
-																			4/5
-																		</SelectItem>
-																		<SelectItem value="5/5">
-																			5/5
-																		</SelectItem>
-																	</SelectContent>
-																</Select>
-															</div>
-														</td>
-													</tr>
-													<tr>
-														<td className="border border-gray-300 p-2">
-															<div className="flex items-center space-x-2">
-																<span className="text-sm">
-																	Distal:
-																</span>
-																<Select
-																	value={
-																		neuropathyExamination.muscleRightUpperDistal
-																	}
-																	onValueChange={(
-																		value
-																	) =>
-																		setNeuropathyExamination(
-																			(
-																				prev
-																			) => ({
-																				...prev,
-																				muscleRightUpperDistal:
-																					value,
-																			})
-																		)
-																	}>
-																	<SelectTrigger className="w-20">
-																		<SelectValue />
-																	</SelectTrigger>
-																	<SelectContent>
-																		<SelectItem value="0/5">
-																			0/5
-																		</SelectItem>
-																		<SelectItem value="1/5">
-																			1/5
-																		</SelectItem>
-																		<SelectItem value="2/5">
-																			2/5
-																		</SelectItem>
-																		<SelectItem value="3/5">
-																			3/5
-																		</SelectItem>
-																		<SelectItem value="4/5">
-																			4/5
-																		</SelectItem>
-																		<SelectItem value="5/5">
-																			5/5
-																		</SelectItem>
-																	</SelectContent>
-																</Select>
-															</div>
-														</td>
-														<td className="border border-gray-300 p-2">
-															<div className="flex items-center space-x-2">
-																<span className="text-sm">
-																	Distal:
-																</span>
-																<Select
-																	value={
-																		neuropathyExamination.muscleLeftUpperDistal
-																	}
-																	onValueChange={(
-																		value
-																	) =>
-																		setNeuropathyExamination(
-																			(
-																				prev
-																			) => ({
-																				...prev,
-																				muscleLeftUpperDistal:
-																					value,
-																			})
-																		)
-																	}>
-																	<SelectTrigger className="w-20">
-																		<SelectValue />
-																	</SelectTrigger>
-																	<SelectContent>
-																		<SelectItem value="0/5">
-																			0/5
-																		</SelectItem>
-																		<SelectItem value="1/5">
-																			1/5
-																		</SelectItem>
-																		<SelectItem value="2/5">
-																			2/5
-																		</SelectItem>
-																		<SelectItem value="3/5">
-																			3/5
-																		</SelectItem>
-																		<SelectItem value="4/5">
-																			4/5
-																		</SelectItem>
-																		<SelectItem value="5/5">
-																			5/5
-																		</SelectItem>
-																	</SelectContent>
-																</Select>
-															</div>
-														</td>
-													</tr>
-													<tr>
-														<td
-															rowSpan={2}
-															className="border border-gray-300 p-2 font-medium">
-															Lower limb
-														</td>
-														<td className="border border-gray-300 p-2">
-															<div className="flex items-center space-x-2">
-																<span className="text-sm">
-																	Proximal:
-																</span>
-																<Select
-																	value={
-																		neuropathyExamination.muscleRightLowerProximal
-																	}
-																	onValueChange={(
-																		value
-																	) =>
-																		setNeuropathyExamination(
-																			(
-																				prev
-																			) => ({
-																				...prev,
-																				muscleRightLowerProximal:
-																					value,
-																			})
-																		)
-																	}>
-																	<SelectTrigger className="w-20">
-																		<SelectValue />
-																	</SelectTrigger>
-																	<SelectContent>
-																		<SelectItem value="0/5">
-																			0/5
-																		</SelectItem>
-																		<SelectItem value="1/5">
-																			1/5
-																		</SelectItem>
-																		<SelectItem value="2/5">
-																			2/5
-																		</SelectItem>
-																		<SelectItem value="3/5">
-																			3/5
-																		</SelectItem>
-																		<SelectItem value="4/5">
-																			4/5
-																		</SelectItem>
-																		<SelectItem value="5/5">
-																			5/5
-																		</SelectItem>
-																	</SelectContent>
-																</Select>
-															</div>
-														</td>
-														<td className="border border-gray-300 p-2">
-															<div className="flex items-center space-x-2">
-																<span className="text-sm">
-																	Proximal:
-																</span>
-																<Select
-																	value={
-																		neuropathyExamination.muscleLeftLowerProximal
-																	}
-																	onValueChange={(
-																		value
-																	) =>
-																		setNeuropathyExamination(
-																			(
-																				prev
-																			) => ({
-																				...prev,
-																				muscleLeftLowerProximal:
-																					value,
-																			})
-																		)
-																	}>
-																	<SelectTrigger className="w-20">
-																		<SelectValue />
-																	</SelectTrigger>
-																	<SelectContent>
-																		<SelectItem value="0/5">
-																			0/5
-																		</SelectItem>
-																		<SelectItem value="1/5">
-																			1/5
-																		</SelectItem>
-																		<SelectItem value="2/5">
-																			2/5
-																		</SelectItem>
-																		<SelectItem value="3/5">
-																			3/5
-																		</SelectItem>
-																		<SelectItem value="4/5">
-																			4/5
-																		</SelectItem>
-																		<SelectItem value="5/5">
-																			5/5
-																		</SelectItem>
-																	</SelectContent>
-																</Select>
-															</div>
-														</td>
-													</tr>
-													<tr>
-														<td className="border border-gray-300 p-2">
-															<div className="flex items-center space-x-2">
-																<span className="text-sm">
-																	Distal:
-																</span>
-																<Select
-																	value={
-																		neuropathyExamination.muscleRightLowerDistal
-																	}
-																	onValueChange={(
-																		value
-																	) =>
-																		setNeuropathyExamination(
-																			(
-																				prev
-																			) => ({
-																				...prev,
-																				muscleRightLowerDistal:
-																					value,
-																			})
-																		)
-																	}>
-																	<SelectTrigger className="w-20">
-																		<SelectValue />
-																	</SelectTrigger>
-																	<SelectContent>
-																		<SelectItem value="0/5">
-																			0/5
-																		</SelectItem>
-																		<SelectItem value="1/5">
-																			1/5
-																		</SelectItem>
-																		<SelectItem value="2/5">
-																			2/5
-																		</SelectItem>
-																		<SelectItem value="3/5">
-																			3/5
-																		</SelectItem>
-																		<SelectItem value="4/5">
-																			4/5
-																		</SelectItem>
-																		<SelectItem value="5/5">
-																			5/5
-																		</SelectItem>
-																	</SelectContent>
-																</Select>
-															</div>
-														</td>
-														<td className="border border-gray-300 p-2">
-															<div className="flex items-center space-x-2">
-																<span className="text-sm">
-																	Distal:
-																</span>
-																<Select
-																	value={
-																		neuropathyExamination.muscleLeftLowerDistal
-																	}
-																	onValueChange={(
-																		value
-																	) =>
-																		setNeuropathyExamination(
-																			(
-																				prev
-																			) => ({
-																				...prev,
-																				muscleLeftLowerDistal:
-																					value,
-																			})
-																		)
-																	}>
-																	<SelectTrigger className="w-20">
-																		<SelectValue />
-																	</SelectTrigger>
-																	<SelectContent>
-																		<SelectItem value="0/5">
-																			0/5
-																		</SelectItem>
-																		<SelectItem value="1/5">
-																			1/5
-																		</SelectItem>
-																		<SelectItem value="2/5">
-																			2/5
-																		</SelectItem>
-																		<SelectItem value="3/5">
-																			3/5
-																		</SelectItem>
-																		<SelectItem value="4/5">
-																			4/5
-																		</SelectItem>
-																		<SelectItem value="5/5">
-																			5/5
-																		</SelectItem>
-																	</SelectContent>
-																</Select>
-															</div>
-														</td>
-													</tr>
-												</tbody>
-											</table>
-										</div>
-										<div className="mt-2">
-											<Label>Personal notes:</Label>
-											<Textarea
-												value={
-													neuropathyExamination.musclePersonalNotes
-												}
-												onChange={(e) =>
-													setNeuropathyExamination(
-														(prev) => ({
-															...prev,
-															musclePersonalNotes:
-																e.target.value,
-														})
-													)
-												}
-												placeholder="Add personal notes about muscle power assessment"
-												className="mt-1"
-												rows={2}
-											/>
-										</div>
-									</div>
-
-									{/* Deep Tendon Reflexes */}
-									<div className="mb-6">
-										<h4 className="font-semibold mb-3">
-											2. Deep tendon reflexes
-										</h4>
-										<div className="overflow-x-auto">
-											<table className="w-full border-collapse border border-gray-300">
-												<thead>
-													<tr className="bg-gray-50">
-														<th className="border border-gray-300 p-2"></th>
-														<th className="border border-gray-300 p-2">
-															Biceps
-														</th>
-														<th className="border border-gray-300 p-2">
-															Triceps
-														</th>
-														<th className="border border-gray-300 p-2">
-															Supinator
-														</th>
-														<th className="border border-gray-300 p-2">
-															Knee
-														</th>
-														<th className="border border-gray-300 p-2">
-															Ankle
-														</th>
-														<th className="border border-gray-300 p-2">
-															Plantar
-														</th>
-													</tr>
-												</thead>
-												<tbody>
-													<tr>
-														<td className="border border-gray-300 p-2 font-medium">
-															Right
-														</td>
-														<td className="border border-gray-300 p-2">
-															<Select
-																value={
-																	neuropathyExamination.reflexBicepsRight
-																}
-																onValueChange={(
-																	value
-																) =>
-																	setNeuropathyExamination(
-																		(
-																			prev
-																		) => ({
-																			...prev,
-																			reflexBicepsRight:
-																				value,
-																		})
-																	)
-																}>
-																<SelectTrigger className="w-16">
-																	<SelectValue />
-																</SelectTrigger>
-																<SelectContent>
-																	<SelectItem value="0">
-																		0
-																	</SelectItem>
-																	<SelectItem value="1+">
-																		1+
-																	</SelectItem>
-																	<SelectItem value="2+">
-																		2+
-																	</SelectItem>
-																	<SelectItem value="3+">
-																		3+
-																	</SelectItem>
-																	<SelectItem value="4+">
-																		4+
-																	</SelectItem>
-																</SelectContent>
-															</Select>
-														</td>
-														<td className="border border-gray-300 p-2">
-															<Select
-																value={
-																	neuropathyExamination.reflexTricepsRight
-																}
-																onValueChange={(
-																	value
-																) =>
-																	setNeuropathyExamination(
-																		(
-																			prev
-																		) => ({
-																			...prev,
-																			reflexTricepsRight:
-																				value,
-																		})
-																	)
-																}>
-																<SelectTrigger className="w-16">
-																	<SelectValue />
-																</SelectTrigger>
-																<SelectContent>
-																	<SelectItem value="0">
-																		0
-																	</SelectItem>
-																	<SelectItem value="1+">
-																		1+
-																	</SelectItem>
-																	<SelectItem value="2+">
-																		2+
-																	</SelectItem>
-																	<SelectItem value="3+">
-																		3+
-																	</SelectItem>
-																	<SelectItem value="4+">
-																		4+
-																	</SelectItem>
-																</SelectContent>
-															</Select>
-														</td>
-														<td className="border border-gray-300 p-2">
-															<Select
-																value={
-																	neuropathyExamination.reflexSupinatorRight
-																}
-																onValueChange={(
-																	value
-																) =>
-																	setNeuropathyExamination(
-																		(
-																			prev
-																		) => ({
-																			...prev,
-																			reflexSupinatorRight:
-																				value,
-																		})
-																	)
-																}>
-																<SelectTrigger className="w-16">
-																	<SelectValue />
-																</SelectTrigger>
-																<SelectContent>
-																	<SelectItem value="0">
-																		0
-																	</SelectItem>
-																	<SelectItem value="1+">
-																		1+
-																	</SelectItem>
-																	<SelectItem value="2+">
-																		2+
-																	</SelectItem>
-																	<SelectItem value="3+">
-																		3+
-																	</SelectItem>
-																	<SelectItem value="4+">
-																		4+
-																	</SelectItem>
-																</SelectContent>
-															</Select>
-														</td>
-														<td className="border border-gray-300 p-2">
-															<Select
-																value={
-																	neuropathyExamination.reflexKneeRight
-																}
-																onValueChange={(
-																	value
-																) =>
-																	setNeuropathyExamination(
-																		(
-																			prev
-																		) => ({
-																			...prev,
-																			reflexKneeRight:
-																				value,
-																		})
-																	)
-																}>
-																<SelectTrigger className="w-16">
-																	<SelectValue />
-																</SelectTrigger>
-																<SelectContent>
-																	<SelectItem value="0">
-																		0
-																	</SelectItem>
-																	<SelectItem value="1+">
-																		1+
-																	</SelectItem>
-																	<SelectItem value="2+">
-																		2+
-																	</SelectItem>
-																	<SelectItem value="3+">
-																		3+
-																	</SelectItem>
-																	<SelectItem value="4+">
-																		4+
-																	</SelectItem>
-																</SelectContent>
-															</Select>
-														</td>
-														<td className="border border-gray-300 p-2">
-															<Select
-																value={
-																	neuropathyExamination.reflexAnkleRight
-																}
-																onValueChange={(
-																	value
-																) =>
-																	setNeuropathyExamination(
-																		(
-																			prev
-																		) => ({
-																			...prev,
-																			reflexAnkleRight:
-																				value,
-																		})
-																	)
-																}>
-																<SelectTrigger className="w-16">
-																	<SelectValue />
-																</SelectTrigger>
-																<SelectContent>
-																	<SelectItem value="0">
-																		0
-																	</SelectItem>
-																	<SelectItem value="1+">
-																		1+
-																	</SelectItem>
-																	<SelectItem value="2+">
-																		2+
-																	</SelectItem>
-																	<SelectItem value="3+">
-																		3+
-																	</SelectItem>
-																	<SelectItem value="4+">
-																		4+
-																	</SelectItem>
-																</SelectContent>
-															</Select>
-														</td>
-														<td className="border border-gray-300 p-2">
-															<Select
-																value={
-																	neuropathyExamination.reflexPlantarRight
-																}
-																onValueChange={(
-																	value
-																) =>
-																	setNeuropathyExamination(
-																		(
-																			prev
-																		) => ({
-																			...prev,
-																			reflexPlantarRight:
-																				value,
-																		})
-																	)
-																}>
-																<SelectTrigger className="w-20">
-																	<SelectValue />
-																</SelectTrigger>
-																<SelectContent>
-																	<SelectItem value="extensor">
-																		Extensor
-																	</SelectItem>
-																	<SelectItem value="flexor">
-																		Flexor
-																	</SelectItem>
-																</SelectContent>
-															</Select>
-														</td>
-													</tr>
-													<tr>
-														<td className="border border-gray-300 p-2 font-medium">
-															Left
-														</td>
-														<td className="border border-gray-300 p-2">
-															<Select
-																value={
-																	neuropathyExamination.reflexBicepsLeft
-																}
-																onValueChange={(
-																	value
-																) =>
-																	setNeuropathyExamination(
-																		(
-																			prev
-																		) => ({
-																			...prev,
-																			reflexBicepsLeft:
-																				value,
-																		})
-																	)
-																}>
-																<SelectTrigger className="w-16">
-																	<SelectValue />
-																</SelectTrigger>
-																<SelectContent>
-																	<SelectItem value="0">
-																		0
-																	</SelectItem>
-																	<SelectItem value="1+">
-																		1+
-																	</SelectItem>
-																	<SelectItem value="2+">
-																		2+
-																	</SelectItem>
-																	<SelectItem value="3+">
-																		3+
-																	</SelectItem>
-																	<SelectItem value="4+">
-																		4+
-																	</SelectItem>
-																</SelectContent>
-															</Select>
-														</td>
-														<td className="border border-gray-300 p-2">
-															<Select
-																value={
-																	neuropathyExamination.reflexTricepsLeft
-																}
-																onValueChange={(
-																	value
-																) =>
-																	setNeuropathyExamination(
-																		(
-																			prev
-																		) => ({
-																			...prev,
-																			reflexTricepsLeft:
-																				value,
-																		})
-																	)
-																}>
-																<SelectTrigger className="w-16">
-																	<SelectValue />
-																</SelectTrigger>
-																<SelectContent>
-																	<SelectItem value="0">
-																		0
-																	</SelectItem>
-																	<SelectItem value="1+">
-																		1+
-																	</SelectItem>
-																	<SelectItem value="2+">
-																		2+
-																	</SelectItem>
-																	<SelectItem value="3+">
-																		3+
-																	</SelectItem>
-																	<SelectItem value="4+">
-																		4+
-																	</SelectItem>
-																</SelectContent>
-															</Select>
-														</td>
-														<td className="border border-gray-300 p-2">
-															<Select
-																value={
-																	neuropathyExamination.reflexSupinatorLeft
-																}
-																onValueChange={(
-																	value
-																) =>
-																	setNeuropathyExamination(
-																		(
-																			prev
-																		) => ({
-																			...prev,
-																			reflexSupinatorLeft:
-																				value,
-																		})
-																	)
-																}>
-																<SelectTrigger className="w-16">
-																	<SelectValue />
-																</SelectTrigger>
-																<SelectContent>
-																	<SelectItem value="0">
-																		0
-																	</SelectItem>
-																	<SelectItem value="1+">
-																		1+
-																	</SelectItem>
-																	<SelectItem value="2+">
-																		2+
-																	</SelectItem>
-																	<SelectItem value="3+">
-																		3+
-																	</SelectItem>
-																	<SelectItem value="4+">
-																		4+
-																	</SelectItem>
-																</SelectContent>
-															</Select>
-														</td>
-														<td className="border border-gray-300 p-2">
-															<Select
-																value={
-																	neuropathyExamination.reflexKneeLeft
-																}
-																onValueChange={(
-																	value
-																) =>
-																	setNeuropathyExamination(
-																		(
-																			prev
-																		) => ({
-																			...prev,
-																			reflexKneeLeft:
-																				value,
-																		})
-																	)
-																}>
-																<SelectTrigger className="w-16">
-																	<SelectValue />
-																</SelectTrigger>
-																<SelectContent>
-																	<SelectItem value="0">
-																		0
-																	</SelectItem>
-																	<SelectItem value="1+">
-																		1+
-																	</SelectItem>
-																	<SelectItem value="2+">
-																		2+
-																	</SelectItem>
-																	<SelectItem value="3+">
-																		3+
-																	</SelectItem>
-																	<SelectItem value="4+">
-																		4+
-																	</SelectItem>
-																</SelectContent>
-															</Select>
-														</td>
-														<td className="border border-gray-300 p-2">
-															<Select
-																value={
-																	neuropathyExamination.reflexAnkleLeft
-																}
-																onValueChange={(
-																	value
-																) =>
-																	setNeuropathyExamination(
-																		(
-																			prev
-																		) => ({
-																			...prev,
-																			reflexAnkleLeft:
-																				value,
-																		})
-																	)
-																}>
-																<SelectTrigger className="w-16">
-																	<SelectValue />
-																</SelectTrigger>
-																<SelectContent>
-																	<SelectItem value="0">
-																		0
-																	</SelectItem>
-																	<SelectItem value="1+">
-																		1+
-																	</SelectItem>
-																	<SelectItem value="2+">
-																		2+
-																	</SelectItem>
-																	<SelectItem value="3+">
-																		3+
-																	</SelectItem>
-																	<SelectItem value="4+">
-																		4+
-																	</SelectItem>
-																</SelectContent>
-															</Select>
-														</td>
-														<td className="border border-gray-300 p-2">
-															<Select
-																value={
-																	neuropathyExamination.reflexPlantarLeft
-																}
-																onValueChange={(
-																	value
-																) =>
-																	setNeuropathyExamination(
-																		(
-																			prev
-																		) => ({
-																			...prev,
-																			reflexPlantarLeft:
-																				value,
-																		})
-																	)
-																}>
-																<SelectTrigger className="w-20">
-																	<SelectValue />
-																</SelectTrigger>
-																<SelectContent>
-																	<SelectItem value="extensor">
-																		Extensor
-																	</SelectItem>
-																	<SelectItem value="flexor">
-																		Flexor
-																	</SelectItem>
-																</SelectContent>
-															</Select>
-														</td>
-													</tr>
-												</tbody>
-											</table>
-										</div>
-									</div>
-
-									{/* Sensory Assessment */}
-									<div className="mb-6">
-										<h4 className="font-semibold mb-3">
-											3. Sensory Assessment
-										</h4>
-										<p className="text-sm text-gray-600 mb-3">
-											Light touch, pain (pin-prick),
-											Temperature, Joint position sense,
-											Vibration
-										</p>
-										<div className="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-300">
-											<div className="text-center text-gray-500 mb-2">
-												<span className="text-sm">
-													Humanoid Figure Diagrams
-													(Ventral and Dorsal)
-												</span>
-											</div>
-											<div className="text-xs text-gray-500 text-center space-y-1">
-												<p>
-													↓ Downward arrow: Reduced
-													sensation
-												</p>
-												<p>
-													↑ Upward arrow: Increased
-													sensation
-												</p>
-											</div>
-											<div className="mt-4 text-center text-sm text-blue-600">
-												[Interactive sensory mapping
-												would be implemented here]
-											</div>
-										</div>
-										<div className="mt-2">
-											<Label>Personal notes:</Label>
-											<Textarea
-												value={
-													neuropathyExamination.sensoryPersonalNotes
-												}
-												onChange={(e) =>
-													setNeuropathyExamination(
-														(prev) => ({
-															...prev,
-															sensoryPersonalNotes:
-																e.target.value,
-														})
-													)
-												}
-												placeholder="Add notes about sensory findings"
-												className="mt-1"
-												rows={2}
-											/>
-										</div>
-									</div>
-
-									{/* Additional Tests */}
-									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-										<div>
-											<Label>4. Rhomberg's test</Label>
+											<Label>Select referrals:</Label>
 											<Select
-												value={
-													neuropathyExamination.rhombergTest
-												}
 												onValueChange={(value) =>
-													setNeuropathyExamination(
-														(prev) => ({
-															...prev,
-															rhombergTest: value,
-														})
-													)
-												}>
-												<SelectTrigger className="mt-2">
-													<SelectValue placeholder="Select result" />
-												</SelectTrigger>
-												<SelectContent>
-													<SelectItem value="positive">
-														Positive
-													</SelectItem>
-													<SelectItem value="negative">
-														Negative
-													</SelectItem>
-												</SelectContent>
-											</Select>
-										</div>
-										<div>
-											<Label>5. Gait</Label>
-											<Input
-												value={
-													neuropathyExamination.gait
-												}
-												onChange={(e) =>
-													setNeuropathyExamination(
-														(prev) => ({
-															...prev,
-															gait: e.target
-																.value,
-														})
-													)
-												}
-												placeholder="Normal, ataxic, short steppage, high steppage"
-												className="mt-2"
-											/>
-										</div>
-									</div>
-								</div>
-
-								{/* C. Order Tests */}
-								<div className="border rounded-lg p-4">
-									<h3 className="text-lg font-semibold text-blue-700 mb-4">
-										C. Order Tests
-									</h3>
-									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-										<div>
-											<Label>
-												Select tests to order:
-											</Label>
-											<Select
-												onValueChange={(value) =>
-													setNeuropathyTests(
+													setNeuropathyReferrals(
 														(prev) => [
 															...prev,
 															value,
@@ -5447,68 +6223,47 @@ export default function ComprehensiveAssessmentFunctional({
 													)
 												}>
 												<SelectTrigger className="mt-2">
-													<SelectValue placeholder="Select test" />
+													<SelectValue placeholder="Select referral" />
 												</SelectTrigger>
 												<SelectContent>
-													<SelectItem value="FBS">
-														FBS
+													<SelectItem value="Ophthalmology">
+														Ophthalmology
 													</SelectItem>
-													<SelectItem value="PPBS">
-														PPBS
+													<SelectItem value="Endocrinology">
+														Endocrinology
 													</SelectItem>
-													<SelectItem value="HbA1c">
-														HbA1c
+													<SelectItem value="Nephrology">
+														Nephrology
 													</SelectItem>
-													<SelectItem value="HIV">
-														HIV
+													<SelectItem value="General medicine">
+														General medicine
 													</SelectItem>
-													<SelectItem value="Vitamin B12">
-														Vitamin B12
+													<SelectItem value="Podologist">
+														Podologist
 													</SelectItem>
-													<SelectItem value="TSH">
-														TSH
+													<SelectItem value="Vascular surgeon">
+														Vascular surgeon
 													</SelectItem>
-													<SelectItem value="Lipid profile">
-														Lipid profile
-													</SelectItem>
-													<SelectItem value="Nerve conduction study">
-														Nerve conduction study
-													</SelectItem>
-													<SelectItem value="Sudoscan">
-														Sudoscan
-													</SelectItem>
-													<SelectItem value="CTS protocol">
-														CTS protocol
-													</SelectItem>
-													<SelectItem value="MRI - Whole spine">
-														MRI - Whole spine
-													</SelectItem>
-													<SelectItem value="MRI - C spine">
-														MRI - C spine
-													</SelectItem>
-													<SelectItem value="MRI - LS spine">
-														MRI - LS spine
-													</SelectItem>
-													<SelectItem value="MRI - Plexus study">
-														MRI - Plexus study
+													<SelectItem value="Interventional radiology">
+														Interventional radiology
 													</SelectItem>
 												</SelectContent>
 											</Select>
-											{neuropathyTests.length > 0 && (
+											{neuropathyReferrals.length > 0 && (
 												<div className="mt-2 space-y-1">
-													{neuropathyTests.map(
-														(test, index) => (
+													{neuropathyReferrals.map(
+														(referral, index) => (
 															<div
 																key={index}
-																className="flex items-center justify-between bg-blue-50 p-2 rounded">
+																className="flex items-center justify-between bg-green-50 p-2 rounded">
 																<span className="text-sm">
-																	{test}
+																	{referral}
 																</span>
 																<Button
 																	size="sm"
 																	variant="ghost"
 																	onClick={() =>
-																		setNeuropathyTests(
+																		setNeuropathyReferrals(
 																			(
 																				prev
 																			) =>
@@ -5531,126 +6286,65 @@ export default function ComprehensiveAssessmentFunctional({
 											)}
 										</div>
 									</div>
-								</div>
 
-								{/* D. Referrals */}
-								<div className="border rounded-lg p-4">
-									<h3 className="text-lg font-semibold text-blue-700 mb-4">
-										D. Referrals
-									</h3>
-									<div>
-										<Label>Select referrals:</Label>
-										<Select
-											onValueChange={(value) =>
-												setNeuropathyReferrals(
-													(prev) => [...prev, value]
-												)
-											}>
-											<SelectTrigger className="mt-2">
-												<SelectValue placeholder="Select referral" />
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="Ophthalmology">
-													Ophthalmology
-												</SelectItem>
-												<SelectItem value="Endocrinology">
-													Endocrinology
-												</SelectItem>
-												<SelectItem value="Nephrology">
-													Nephrology
-												</SelectItem>
-												<SelectItem value="General medicine">
-													General medicine
-												</SelectItem>
-												<SelectItem value="Podologist">
-													Podologist
-												</SelectItem>
-												<SelectItem value="Vascular surgeon">
-													Vascular surgeon
-												</SelectItem>
-												<SelectItem value="Interventional radiology">
-													Interventional radiology
-												</SelectItem>
-											</SelectContent>
-										</Select>
-										{neuropathyReferrals.length > 0 && (
-											<div className="mt-2 space-y-1">
-												{neuropathyReferrals.map(
-													(referral, index) => (
-														<div
-															key={index}
-															className="flex items-center justify-between bg-green-50 p-2 rounded">
-															<span className="text-sm">
-																{referral}
-															</span>
-															<Button
-																size="sm"
-																variant="ghost"
-																onClick={() =>
-																	setNeuropathyReferrals(
-																		(
-																			prev
-																		) =>
-																			prev.filter(
-																				(
-																					_,
-																					i
-																				) =>
-																					i !==
-																					index
-																			)
-																	)
-																}>
-																<X className="h-3 w-3" />
-															</Button>
-														</div>
-													)
-												)}
+									{/* E. Medication Management */}
+									<div className="border rounded-lg p-4">
+										<h3 className="text-lg font-semibold text-blue-700 mb-4">
+											E. Medication Management
+										</h3>
+										<div className="space-y-4">
+											<div>
+												<Button
+													onClick={() => {
+														if (onNavigate)
+															onNavigate(
+																"medications"
+															);
+														else if (
+															typeof window !==
+															"undefined"
+														) {
+															const params =
+																new URLSearchParams(
+																	window.location.search
+																);
+															params.set(
+																"tab",
+																"medications"
+															);
+															window.location.search = `?${params}`;
+														}
+													}}
+													className="w-full">
+													<Pill className="h-4 w-4 mr-2" />
+													Open Medications Page
+												</Button>
+												<p className="text-xs text-gray-600 mt-2">
+													Integrated prescription with
+													Pregabalin, Gabapentin,
+													Gabagesic ointment
+												</p>
 											</div>
-										)}
-									</div>
-								</div>
-
-								{/* E. Medication Management */}
-								<div className="border rounded-lg p-4">
-									<h3 className="text-lg font-semibold text-blue-700 mb-4">
-										E. Medication Management
-									</h3>
-									<div className="space-y-4">
-										<div>
-											<Button
-												onClick={() =>
-													(window.location.href =
-														"/medications")
-												}
-												className="w-full">
-												<Pill className="h-4 w-4 mr-2" />
-												Open Medications Page
-											</Button>
-											<p className="text-xs text-gray-600 mt-2">
-												Integrated prescription with
-												Pregabalin, Gabapentin,
-												Gabagesic ointment
-											</p>
-										</div>
-										<div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
-											<p className="text-sm text-yellow-800">
-												<strong>Note:</strong> When
-												neurologist is consulted for
-												neurological symptoms and
-												patient has optimal HbA1c
-												control, DM and HTN medications
-												will be included in integrated
-												prescription. Otherwise, refer
-												to endocrinology or general
-												medicine for DM/HTN medication
-												optimization.
-											</p>
+											<div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+												<p className="text-sm text-yellow-800">
+													<strong>Note:</strong> When
+													neurologist is consulted for
+													neurological symptoms and
+													patient has optimal HbA1c
+													control, DM and HTN
+													medications will be included
+													in integrated prescription.
+													Otherwise, refer to
+													endocrinology or general
+													medicine for DM/HTN
+													medication optimization.
+												</p>
+											</div>
 										</div>
 									</div>
-								</div>
-							</CardContent>
-						</Card>
+								</CardContent>
+							</Card>
+						)}
 
 						{/* CVA/Stroke Assessment */}
 						<Card className="bg-white shadow-lg">
@@ -5798,8 +6492,8 @@ export default function ComprehensiveAssessmentFunctional({
 									<div className="mt-6 space-y-4">
 										<div>
 											<Label>
-												7. Present or current symptoms
-												(TIA symptoms)
+												7. Current symptoms / TIA
+												symptoms / Stroke
 											</Label>
 											<Textarea
 												value={
@@ -6170,10 +6864,26 @@ export default function ComprehensiveAssessmentFunctional({
 
 										<div>
 											<Button
-												onClick={() =>
-													(window.location.href =
-														"/medications")
-												}
+												onClick={() => {
+													if (onNavigate)
+														onNavigate(
+															"medications"
+														);
+													else if (
+														typeof window !==
+														"undefined"
+													) {
+														const params =
+															new URLSearchParams(
+																window.location.search
+															);
+														params.set(
+															"tab",
+															"medications"
+														);
+														window.location.search = `?${params}`;
+													}
+												}}
 												className="w-full">
 												<Pill className="h-4 w-4 mr-2" />
 												Medication Management - Add
@@ -6208,6 +6918,19 @@ export default function ComprehensiveAssessmentFunctional({
 													type="checkbox"
 													id="carotid-doppler"
 													className="rounded"
+													checked={
+														!!cvaTests[
+															"carotid-doppler"
+														]
+													}
+													onChange={(e) =>
+														setCvaTests((p) => ({
+															...p,
+															["carotid-doppler"]:
+																e.target
+																	.checked,
+														}))
+													}
 												/>
 												<Label
 													htmlFor="carotid-doppler"
@@ -6217,10 +6940,47 @@ export default function ComprehensiveAssessmentFunctional({
 											</div>
 											<div className="flex items-center space-x-2 p-2 border rounded">
 												<input
+													aria-label="transcranial-doppler"
+													type="checkbox"
+													id="transcranial-doppler"
+													className="rounded"
+													checked={
+														!!cvaTests[
+															"transcranial-doppler"
+														]
+													}
+													onChange={(e) =>
+														setCvaTests((p) => ({
+															...p,
+															["transcranial-doppler"]:
+																e.target
+																	.checked,
+														}))
+													}
+												/>
+												<Label
+													htmlFor="transcranial-doppler"
+													className="text-sm">
+													Transcranial Doppler
+												</Label>
+											</div>
+											<div className="flex items-center space-x-2 p-2 border rounded">
+												<input
 													aria-label="mri-brain"
 													type="checkbox"
 													id="mri-brain"
 													className="rounded"
+													checked={
+														!!cvaTests["mri-brain"]
+													}
+													onChange={(e) =>
+														setCvaTests((p) => ({
+															...p,
+															["mri-brain"]:
+																e.target
+																	.checked,
+														}))
+													}
 												/>
 												<Label
 													htmlFor="mri-brain"
@@ -6234,6 +6994,17 @@ export default function ComprehensiveAssessmentFunctional({
 													type="checkbox"
 													id="ct-brain"
 													className="rounded"
+													checked={
+														!!cvaTests["ct-brain"]
+													}
+													onChange={(e) =>
+														setCvaTests((p) => ({
+															...p,
+															["ct-brain"]:
+																e.target
+																	.checked,
+														}))
+													}
 												/>
 												<Label
 													htmlFor="ct-brain"
@@ -6247,6 +7018,17 @@ export default function ComprehensiveAssessmentFunctional({
 													type="checkbox"
 													id="ecg-stroke"
 													className="rounded"
+													checked={
+														!!cvaTests["ecg-stroke"]
+													}
+													onChange={(e) =>
+														setCvaTests((p) => ({
+															...p,
+															["ecg-stroke"]:
+																e.target
+																	.checked,
+														}))
+													}
 												/>
 												<Label
 													htmlFor="ecg-stroke"
@@ -6260,6 +7042,19 @@ export default function ComprehensiveAssessmentFunctional({
 													type="checkbox"
 													id="echo-stroke"
 													className="rounded"
+													checked={
+														!!cvaTests[
+															"echo-stroke"
+														]
+													}
+													onChange={(e) =>
+														setCvaTests((p) => ({
+															...p,
+															["echo-stroke"]:
+																e.target
+																	.checked,
+														}))
+													}
 												/>
 												<Label
 													htmlFor="echo-stroke"
@@ -6273,6 +7068,19 @@ export default function ComprehensiveAssessmentFunctional({
 													type="checkbox"
 													id="lipid-profile-stroke"
 													className="rounded"
+													checked={
+														!!cvaTests[
+															"lipid-profile-stroke"
+														]
+													}
+													onChange={(e) =>
+														setCvaTests((p) => ({
+															...p,
+															["lipid-profile-stroke"]:
+																e.target
+																	.checked,
+														}))
+													}
 												/>
 												<Label
 													htmlFor="lipid-profile-stroke"
@@ -6280,9 +7088,39 @@ export default function ComprehensiveAssessmentFunctional({
 													Lipid Profile
 												</Label>
 											</div>
+											<div className="flex items-center space-x-2 p-2 border rounded">
+												<input
+													aria-label="holter"
+													type="checkbox"
+													id="holter"
+													className="rounded"
+													checked={
+														!!cvaTests["holter"]
+													}
+													onChange={(e) =>
+														setCvaTests((p) => ({
+															...p,
+															holter: e.target
+																.checked,
+														}))
+													}
+												/>
+												<Label
+													htmlFor="holter"
+													className="text-sm">
+													Holter Monitoring
+												</Label>
+											</div>
 										</div>
 									</div>
-									<Button className="mt-4">
+									<Button
+										className="mt-4"
+										onClick={() =>
+											addSelectedTests(
+												cvaTests,
+												cvaTestLabels
+											)
+										}>
 										<Plus className="h-4 w-4 mr-2" />
 										Add Selected Tests to Orders
 									</Button>
@@ -6364,10 +7202,23 @@ export default function ComprehensiveAssessmentFunctional({
 
 									<Button
 										className="w-full"
-										onClick={() =>
-											(window.location.href =
-												"#medications")
-										}>
+										onClick={() => {
+											if (onNavigate)
+												onNavigate("medications");
+											else if (
+												typeof window !== "undefined"
+											) {
+												const params =
+													new URLSearchParams(
+														window.location.search
+													);
+												params.set(
+													"tab",
+													"medications"
+												);
+												window.location.search = `?${params}`;
+											}
+										}}>
 										<ArrowRight className="h-4 w-4 mr-2" />
 										Open Medications Management Page
 									</Button>
@@ -6622,6 +7473,227 @@ export default function ComprehensiveAssessmentFunctional({
 										</div>
 									</div>
 
+									{/* Order Tests - moved to top per spec */}
+									<Card className="bg-white shadow-lg">
+										<CardHeader>
+											<CardTitle className="text-navy-600 flex items-center">
+												<TestTube className="h-5 w-5 mr-2" />
+												Order Tests
+											</CardTitle>
+										</CardHeader>
+										<CardContent>
+											<div className="space-y-4">
+												<div>
+													<Label className="text-sm font-medium text-blue-700 mb-2 block">
+														Essential Tests for
+														FIB-4 Calculation
+													</Label>
+													<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+														<div className="flex items-center space-x-2 p-3 border-2 border-blue-200 rounded bg-blue-50">
+															<input
+																aria-label="LFT"
+																type="checkbox"
+																id="lft"
+																className="rounded"
+																checked={
+																	!!liverTests[
+																		"lft"
+																	]
+																}
+																onChange={(e) =>
+																	setLiverTests(
+																		(
+																			p
+																		) => ({
+																			...p,
+																			lft: e
+																				.target
+																				.checked,
+																		})
+																	)
+																}
+															/>
+															<Label
+																htmlFor="lft"
+																className="text-sm font-medium">
+																Liver Function
+																Test (LFT)
+															</Label>
+														</div>
+														<div className="flex items-center space-x-2 p-3 border-2 border-blue-200 rounded bg-blue-50">
+															<input
+																aria-label="platelet-count"
+																type="checkbox"
+																id="cbc-platelet"
+																className="rounded"
+																checked={
+																	!!liverTests[
+																		"cbc-platelet"
+																	]
+																}
+																onChange={(e) =>
+																	setLiverTests(
+																		(
+																			p
+																		) => ({
+																			...p,
+																			["cbc-platelet"]:
+																				e
+																					.target
+																					.checked,
+																		})
+																	)
+																}
+															/>
+															<Label
+																htmlFor="cbc-platelet"
+																className="text-sm font-medium">
+																CBC/Platelet
+																Count
+															</Label>
+														</div>
+														<div className="flex items-center space-x-2 p-3 border-2 border-orange-200 rounded bg-orange-50">
+															<input
+																aria-label="ultrasound-liver"
+																type="checkbox"
+																id="ultrasound-yearly"
+																className="rounded"
+																checked={
+																	!!liverTests[
+																		"ultrasound-yearly"
+																	]
+																}
+																onChange={(e) =>
+																	setLiverTests(
+																		(
+																			p
+																		) => ({
+																			...p,
+																			["ultrasound-yearly"]:
+																				e
+																					.target
+																					.checked,
+																		})
+																	)
+																}
+															/>
+															<Label
+																htmlFor="ultrasound-yearly"
+																className="text-sm font-medium">
+																Ultrasound
+																(Yearly)
+															</Label>
+														</div>
+														<div className="flex items-center space-x-2 p-2 border rounded">
+															<input
+																aria-label="fibroscan"
+																type="checkbox"
+																id="fibroscan"
+																className="rounded"
+																checked={
+																	!!liverTests[
+																		"fibroscan"
+																	]
+																}
+																onChange={(e) =>
+																	setLiverTests(
+																		(
+																			p
+																		) => ({
+																			...p,
+																			fibroscan:
+																				e
+																					.target
+																					.checked,
+																		})
+																	)
+																}
+															/>
+															<Label
+																htmlFor="fibroscan"
+																className="text-sm">
+																FibroScan
+															</Label>
+														</div>
+														<div className="flex items-center space-x-2 p-2 border rounded">
+															<input
+																aria-label="hba1c-liver"
+																type="checkbox"
+																id="hba1c-liver"
+																className="rounded"
+																checked={
+																	!!liverTests[
+																		"hba1c-liver"
+																	]
+																}
+																onChange={(e) =>
+																	setLiverTests(
+																		(
+																			p
+																		) => ({
+																			...p,
+																			["hba1c-liver"]:
+																				e
+																					.target
+																					.checked,
+																		})
+																	)
+																}
+															/>
+															<Label
+																htmlFor="hba1c-liver"
+																className="text-sm">
+																HbA1c
+															</Label>
+														</div>
+														<div className="flex items-center space-x-2 p-2 border rounded">
+															<input
+																aria-label="lipid-profile-liver"
+																type="checkbox"
+																id="lipid-profile-liver"
+																className="rounded"
+																checked={
+																	!!liverTests[
+																		"lipid-profile-liver"
+																	]
+																}
+																onChange={(e) =>
+																	setLiverTests(
+																		(
+																			p
+																		) => ({
+																			...p,
+																			["lipid-profile-liver"]:
+																				e
+																					.target
+																					.checked,
+																		})
+																	)
+																}
+															/>
+															<Label
+																htmlFor="lipid-profile-liver"
+																className="text-sm">
+																Lipid Profile
+															</Label>
+														</div>
+													</div>
+												</div>
+												<Button
+													className="mt-2"
+													onClick={() =>
+														addSelectedTests(
+															liverTests,
+															liverTestLabels
+														)
+													}>
+													<Plus className="h-4 w-4 mr-2" />
+													Add Selected Tests to Orders
+												</Button>
+											</div>
+										</CardContent>
+									</Card>
+
 									{/* FIB-4 Score Calculation */}
 									<Card className="bg-blue-50 border-blue-200">
 										<CardHeader>
@@ -6761,86 +7833,6 @@ export default function ComprehensiveAssessmentFunctional({
 										</CardContent>
 									</Card>
 
-									{/* Symptoms & Clinical Features */}
-									<div>
-										<h3 className="font-semibold text-gray-800 mb-3">
-											Clinical Symptoms & Features
-										</h3>
-										<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-											<div className="space-y-3">
-												<div className="flex items-center space-x-2">
-													<input
-														aria-label="fatigue-liver"
-														type="checkbox"
-														id="fatigue-liver"
-														className="rounded"
-													/>
-													<Label htmlFor="fatigue-liver">
-														Fatigue
-													</Label>
-												</div>
-												<div className="flex items-center space-x-2">
-													<input
-														aria-label="abdominal-pain"
-														type="checkbox"
-														id="abdominal-pain"
-														className="rounded"
-													/>
-													<Label htmlFor="abdominal-pain">
-														Right upper abdominal
-														pain
-													</Label>
-												</div>
-												<div className="flex items-center space-x-2">
-													<input
-														aria-label="nausea"
-														type="checkbox"
-														id="hepatomegaly"
-														className="rounded"
-													/>
-													<Label htmlFor="hepatomegaly">
-														Hepatomegaly
-													</Label>
-												</div>
-											</div>
-											<div className="space-y-3">
-												<div className="flex items-center space-x-2">
-													<input
-														aria-label="spider-nevi"
-														type="checkbox"
-														id="spider-nevi"
-														className="rounded"
-													/>
-													<Label htmlFor="spider-nevi">
-														Spider nevi
-													</Label>
-												</div>
-												<div className="flex items-center space-x-2">
-													<input
-														aria-label="palmar-erythema"
-														type="checkbox"
-														id="palmar-erythema"
-														className="rounded"
-													/>
-													<Label htmlFor="palmar-erythema">
-														Palmar erythema
-													</Label>
-												</div>
-												<div className="flex items-center space-x-2">
-													<input
-														aria-label="jaundice"
-														type="checkbox"
-														id="jaundice"
-														className="rounded"
-													/>
-													<Label htmlFor="jaundice">
-														Jaundice
-													</Label>
-												</div>
-											</div>
-										</div>
-									</div>
-
 									{/* Personal Notes */}
 									<div>
 										<Label className="text-sm font-medium">
@@ -6852,110 +7844,6 @@ export default function ComprehensiveAssessmentFunctional({
 											rows={3}
 										/>
 									</div>
-								</div>
-							</CardContent>
-						</Card>
-
-						{/* Order Tests */}
-						<Card className="bg-white shadow-lg">
-							<CardHeader>
-								<CardTitle className="text-navy-600 flex items-center">
-									<TestTube className="h-5 w-5 mr-2" />
-									Order Tests
-								</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<div className="space-y-4">
-									<div>
-										<Label className="text-sm font-medium text-blue-700 mb-2 block">
-											Essential Tests for FIB-4
-											Calculation
-										</Label>
-										<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-											<div className="flex items-center space-x-2 p-3 border-2 border-blue-200 rounded bg-blue-50">
-												<input
-													aria-label="LFT"
-													type="checkbox"
-													id="lft"
-													className="rounded"
-												/>
-												<Label
-													htmlFor="lft"
-													className="text-sm font-medium">
-													Liver Function Test (LFT)
-												</Label>
-											</div>
-											<div className="flex items-center space-x-2 p-3 border-2 border-blue-200 rounded bg-blue-50">
-												<input
-													aria-label="platelet-count"
-													type="checkbox"
-													id="cbc-platelet"
-													className="rounded"
-												/>
-												<Label
-													htmlFor="cbc-platelet"
-													className="text-sm font-medium">
-													CBC/Platelet Count
-												</Label>
-											</div>
-											<div className="flex items-center space-x-2 p-3 border-2 border-orange-200 rounded bg-orange-50">
-												<input
-													aria-label="ultrasound-liver"
-													type="checkbox"
-													id="ultrasound-yearly"
-													className="rounded"
-												/>
-												<Label
-													htmlFor="ultrasound-yearly"
-													className="text-sm font-medium">
-													Ultrasound (Yearly)
-												</Label>
-											</div>
-											<div className="flex items-center space-x-2 p-2 border rounded">
-												<input
-													aria-label="fibroscan"
-													type="checkbox"
-													id="fibroscan"
-													className="rounded"
-												/>
-												<Label
-													htmlFor="fibroscan"
-													className="text-sm">
-													FibroScan
-												</Label>
-											</div>
-											<div className="flex items-center space-x-2 p-2 border rounded">
-												<input
-													aria-label="hba1c-liver"
-													type="checkbox"
-													id="hba1c-liver"
-													className="rounded"
-												/>
-												<Label
-													htmlFor="hba1c-liver"
-													className="text-sm">
-													HbA1c
-												</Label>
-											</div>
-											<div className="flex items-center space-x-2 p-2 border rounded">
-												<input
-													aria-label="lipid-profile-liver"
-													type="checkbox"
-													id="lipid-profile-liver"
-													className="rounded"
-												/>
-												<Label
-													htmlFor="lipid-profile-liver"
-													className="text-sm">
-													Lipid Profile
-												</Label>
-											</div>
-										</div>
-									</div>
-									<Button className="mt-4">
-										<Plus className="h-4 w-4 mr-2" />
-										Add Selected Tests to Orders
-									</Button>
 								</div>
 							</CardContent>
 						</Card>
@@ -7003,15 +7891,41 @@ export default function ComprehensiveAssessmentFunctional({
 													GLP-1 agonist
 												</Label>
 											</div>
+											<div className="flex items-center space-x-2 p-3 border rounded bg-green-50">
+												<input
+													aria-label="pioglitazone-liver"
+													type="checkbox"
+													id="pioglitazone-liver"
+													className="rounded"
+												/>
+												<Label
+													htmlFor="pioglitazone-liver"
+													className="text-sm font-medium">
+													Pioglitazone
+												</Label>
+											</div>
 										</div>
 									</div>
 
 									<Button
 										className="w-full"
-										onClick={() =>
-											(window.location.href =
-												"#medications")
-										}>
+										onClick={() => {
+											if (onNavigate)
+												onNavigate("medications");
+											else if (
+												typeof window !== "undefined"
+											) {
+												const params =
+													new URLSearchParams(
+														window.location.search
+													);
+												params.set(
+													"tab",
+													"medications"
+												);
+												window.location.search = `?${params}`;
+											}
+										}}>
 										<ArrowRight className="h-4 w-4 mr-2" />
 										Open Medications Management Page
 									</Button>
@@ -7190,103 +8104,6 @@ export default function ComprehensiveAssessmentFunctional({
 												/>
 												<Label htmlFor="pain-walking">
 													Pain on walking
-												</Label>
-											</div>
-											<div className="flex items-center space-x-2">
-												<input
-													aria-label="rest-pain"
-													type="checkbox"
-													id="rest-pain"
-													className="rounded"
-												/>
-												<Label htmlFor="rest-pain">
-													Rest pain
-												</Label>
-											</div>
-											<div className="flex items-center space-x-2">
-												<input
-													aria-label="cold-feet"
-													type="checkbox"
-													id="cold-feet"
-													className="rounded"
-												/>
-												<Label htmlFor="cold-feet">
-													Cold feet
-												</Label>
-											</div>
-											<div className="flex items-center space-x-2">
-												<input
-													aria-label="numbness-tingling"
-													type="checkbox"
-													id="absent-pulses"
-													className="rounded"
-												/>
-												<Label htmlFor="absent-pulses">
-													Absent pedal pulses
-												</Label>
-											</div>
-										</div>
-									</div>
-
-									{/* Physical Examination */}
-									<div className="space-y-4">
-										<h3 className="font-semibold text-gray-800">
-											Physical Examination
-										</h3>
-										<div className="space-y-3">
-											<div className="flex items-center space-x-2">
-												<input
-													aria-label="skin-changes"
-													type="checkbox"
-													id="skin-changes"
-													className="rounded"
-												/>
-												<Label htmlFor="skin-changes">
-													Skin changes/discoloration
-												</Label>
-											</div>
-											<div className="flex items-center space-x-2">
-												<input
-													aria-label="hair-loss"
-													type="checkbox"
-													id="hair-loss"
-													className="rounded"
-												/>
-												<Label htmlFor="hair-loss">
-													Hair loss on legs/feet
-												</Label>
-											</div>
-											<div className="flex items-center space-x-2">
-												<input
-													aria-label="nail-changes"
-													type="checkbox"
-													id="nail-changes"
-													className="rounded"
-												/>
-												<Label htmlFor="nail-changes">
-													Nail changes
-												</Label>
-											</div>
-											<div className="flex items-center space-x-2">
-												<input
-													aria-label="muscle-atrophy"
-													type="checkbox"
-													id="muscle-atrophy"
-													className="rounded"
-												/>
-												<Label htmlFor="muscle-atrophy">
-													Muscle atrophy
-												</Label>
-											</div>
-											<div className="flex items-center space-x-2">
-												<input
-													aria-label="ulcers"
-													type="checkbox"
-													id="ulcers"
-													className="rounded"
-												/>
-												<Label htmlFor="ulcers">
-													Ulcers/wounds
 												</Label>
 											</div>
 										</div>
@@ -7888,10 +8705,23 @@ export default function ComprehensiveAssessmentFunctional({
 
 									<Button
 										className="w-full"
-										onClick={() =>
-											(window.location.href =
-												"#medications")
-										}>
+										onClick={() => {
+											if (onNavigate)
+												onNavigate("medications");
+											else if (
+												typeof window !== "undefined"
+											) {
+												const params =
+													new URLSearchParams(
+														window.location.search
+													);
+												params.set(
+													"tab",
+													"medications"
+												);
+												window.location.search = `?${params}`;
+											}
+										}}>
 										<ArrowRight className="h-4 w-4 mr-2" />
 										Open Medications Management Page
 									</Button>
@@ -8523,6 +9353,689 @@ Best regards,
 							</div>
 						</CardContent>
 					</Card>
+				</TabsContent>
+
+				{/* PMR Subtab */}
+				<TabsContent value="pmr">
+					<div className="space-y-6">
+						{/* Diabetic Foot (PMR) */}
+						<Card className="bg-white shadow-lg">
+							<CardHeader>
+								<CardTitle className="text-xl text-navy-600">
+									PMR — Diabetic Foot
+								</CardTitle>
+							</CardHeader>
+							<CardContent className="space-y-6">
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+									<div>
+										<Label>
+											Duration of Diabetes (years)
+										</Label>
+										<Input placeholder="e.g. 5" />
+										<p className="text-xs text-gray-500 mt-1">
+											If ≥1 year: ensure annual screening.
+										</p>
+									</div>
+									<div>
+										<Label>Treatment Type</Label>
+										<Select>
+											<SelectTrigger className="mt-2">
+												<SelectValue placeholder="Select" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="oral">
+													Oral drugs only
+												</SelectItem>
+												<SelectItem value="oral+insulin">
+													Oral + Insulin
+												</SelectItem>
+											</SelectContent>
+										</Select>
+										<p className="text-xs text-gray-500 mt-1">
+											Helps infer long-term control.
+										</p>
+									</div>
+									<div>
+										<Label>Medication Adherence (%)</Label>
+										<Input placeholder="e.g. 90" />
+									</div>
+									<div>
+										<Label>Diet Adherence (%)</Label>
+										<Input placeholder="e.g. 85" />
+									</div>
+								</div>
+
+								<div>
+									<Label className="font-medium">
+										Symptom Screening (check positives)
+									</Label>
+									<div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+										{[
+											"Tingling / numbness / paresthesia",
+											"Intermittent claudication (PVD)",
+											"Not able to grip chappals",
+											"Sensory loss: hot/cold or sock feel",
+											"Foot deformity (hallux valgus, claw)",
+											"Skin changes: hyperpigmentation, fissures, corns",
+											"History of foot ulcer",
+											"Balance issues with feet on ground",
+											"Prior amputation",
+											"Lower limb joint pain / OA",
+										].map((label, idx) => (
+											<label
+												key={idx}
+												className="flex items-center space-x-2 text-sm">
+												<Checkbox />
+												<span>{label}</span>
+											</label>
+										))}
+									</div>
+								</div>
+
+								<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+									<div>
+										<Label>Last Ulcer — Site</Label>
+										<Input placeholder="e.g. plantar hallux" />
+										<Label className="mt-2">When</Label>
+										<Input placeholder="e.g. Jan 2025" />
+										<Label className="mt-2">
+											Time to heal
+										</Label>
+										<Input placeholder="e.g. 4 weeks" />
+									</div>
+									<div>
+										<Label>
+											Current Ulcer —
+											Site/Size/Base/Staging
+										</Label>
+										<Textarea
+											rows={4}
+											placeholder="Describe current ulcer if present"
+										/>
+									</div>
+									<div>
+										<Label>Cellulitis Details</Label>
+										<Textarea
+											rows={4}
+											placeholder="Redness, warmth, lymphangitis, etc."
+										/>
+									</div>
+								</div>
+
+								<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+									<div>
+										<Label>Neuropathy Tests</Label>
+										<div className="space-y-2 mt-2 text-sm">
+											<label className="flex items-center space-x-2">
+												<Checkbox /> <span>IPTT</span>
+											</label>
+											<label className="flex items-center space-x-2">
+												<Checkbox />{" "}
+												<span>Monofilament</span>
+											</label>
+											<Textarea
+												rows={3}
+												placeholder="Personal notes"
+											/>
+										</div>
+									</div>
+									<div>
+										<Label>
+											Vasculopathy — Peripheral Pulses
+										</Label>
+										<div className="mt-2 border rounded">
+											<table className="w-full text-sm">
+												<thead className="bg-gray-50">
+													<tr>
+														<th className="p-2 text-left"></th>
+														<th className="p-2 text-left">
+															Right
+														</th>
+														<th className="p-2 text-left">
+															Left
+														</th>
+													</tr>
+												</thead>
+												<tbody>
+													<tr className="border-t">
+														<td className="p-2">
+															Dorsalis Pedis
+														</td>
+														<td className="p-2">
+															<Checkbox /> Present
+														</td>
+														<td className="p-2">
+															<Checkbox /> Present
+														</td>
+													</tr>
+													<tr className="border-t">
+														<td className="p-2">
+															Posterior Tibial
+														</td>
+														<td className="p-2">
+															<Checkbox /> Present
+														</td>
+														<td className="p-2">
+															<Checkbox /> Present
+														</td>
+													</tr>
+												</tbody>
+											</table>
+										</div>
+									</div>
+									<div>
+										<Label>Autonomic Neuropathy</Label>
+										<div className="mt-2 space-y-2 text-sm">
+											<label className="flex items-center space-x-2">
+												<Checkbox />{" "}
+												<span>Nail changes</span>
+											</label>
+											<label className="flex items-center space-x-2">
+												<Checkbox />{" "}
+												<span>Skin changes</span>
+											</label>
+										</div>
+									</div>
+								</div>
+
+								<div>
+									<Label className="font-medium">
+										Motor Power (0/5 to 5/5)
+									</Label>
+									<div className="overflow-x-auto mt-2">
+										<table className="w-full text-sm border">
+											<thead className="bg-gray-50">
+												<tr>
+													<th className="p-2 text-left"></th>
+													<th className="p-2 text-left">
+														Right
+													</th>
+													<th className="p-2 text-left">
+														Left
+													</th>
+												</tr>
+											</thead>
+											<tbody>
+												{[
+													"Dorsi Flexion",
+													"Plantar Flexion",
+													"Extensor Hallucis Longus",
+													"Intrinsics",
+												].map((muscle) => (
+													<tr
+														key={muscle}
+														className="border-t">
+														<td className="p-2">
+															{muscle}
+														</td>
+														<td className="p-2">
+															<Select>
+																<SelectTrigger className="w-28">
+																	<SelectValue placeholder="Select" />
+																</SelectTrigger>
+																<SelectContent>
+																	{[
+																		0, 1, 2,
+																		3, 4, 5,
+																	].map(
+																		(n) => (
+																			<SelectItem
+																				key={
+																					n
+																				}
+																				value={`${n}/5`}>
+																				{
+																					n
+																				}
+																				/5
+																			</SelectItem>
+																		)
+																	)}
+																</SelectContent>
+															</Select>
+														</td>
+														<td className="p-2">
+															<Select>
+																<SelectTrigger className="w-28">
+																	<SelectValue placeholder="Select" />
+																</SelectTrigger>
+																<SelectContent>
+																	{[
+																		0, 1, 2,
+																		3, 4, 5,
+																	].map(
+																		(n) => (
+																			<SelectItem
+																				key={
+																					n
+																				}
+																				value={`${n}/5`}>
+																				{
+																					n
+																				}
+																				/5
+																			</SelectItem>
+																		)
+																	)}
+																</SelectContent>
+															</Select>
+														</td>
+													</tr>
+												))}
+											</tbody>
+										</table>
+									</div>
+								</div>
+
+								<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+									<div className="md:col-span-2">
+										<Label>Diagnosis</Label>
+										<Textarea
+											rows={3}
+											placeholder="e.g. Diabetic neuropathy with vasculopathy, autonomic neuropathy with ulcer over... grade... with foot deformity..."
+										/>
+									</div>
+									<div>
+										<Label>Advice (select to add)</Label>
+										<Select>
+											<SelectTrigger className="mt-2">
+												<SelectValue placeholder="Choose advice" />
+											</SelectTrigger>
+											<SelectContent>
+												{[
+													"Emollients",
+													"Salicylic acid",
+													"Debridement and dressing",
+													"Amoxicillin + Clavulanic acid",
+													"Ciprofloxacin",
+													"Clindamycin",
+													"Linezolid",
+												].map((a) => (
+													<SelectItem
+														key={a}
+														value={a}>
+														{a}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+										<p className="text-xs text-gray-500 mt-1">
+											Integrated with prescriptions to
+											print.
+										</p>
+									</div>
+									<div>
+										<Label>Footwear Customization</Label>
+										<Input placeholder="Free-text customization requirements" />
+										<Label className="mt-2">
+											Orthotic Device
+										</Label>
+										<Input placeholder="Free-text customization requirements" />
+									</div>
+								</div>
+
+								<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+									<div>
+										<Label>Education</Label>
+										<div className="mt-2 space-y-2 text-sm">
+											<label className="flex items-center space-x-2">
+												<Checkbox />{" "}
+												<span>Diabetic foot care</span>
+											</label>
+											<label className="flex items-center space-x-2">
+												<Checkbox />{" "}
+												<span>Diet chart</span>
+											</label>
+										</div>
+									</div>
+									<div>
+										<Label>Referrals</Label>
+										<Select
+											onValueChange={(v) =>
+												addToReferrals(v)
+											}>
+											<SelectTrigger className="mt-2">
+												<SelectValue placeholder="Add referral" />
+											</SelectTrigger>
+											<SelectContent>
+												{[
+													"Nutrition",
+													"Endocrine",
+													"General Surgery",
+													"Plastic Surgery",
+													"Others",
+												].map((r) => (
+													<SelectItem
+														key={r}
+														value={r}>
+														{r}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+										<Input
+											className="mt-2"
+											placeholder="Referral notes (optional)"
+										/>
+									</div>
+									<div>
+										<Label>Order Tests</Label>
+										<Select
+											onValueChange={(v) =>
+												addToOrders(v)
+											}>
+											<SelectTrigger className="mt-2">
+												<SelectValue placeholder="Add test" />
+											</SelectTrigger>
+											<SelectContent>
+												{[
+													"X-ray Foot",
+													"MRI Foot",
+													"Doppler Peripheral Artery",
+													"DVT scan",
+													"USG Extremity",
+												].map((t) => (
+													<SelectItem
+														key={t}
+														value={t}>
+														{t}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									</div>
+									<div>
+										<Label>Follow-up</Label>
+										<div className="flex items-center space-x-2 mt-2">
+											<Input
+												className="w-20"
+												placeholder="#"
+											/>
+											<Select>
+												<SelectTrigger className="w-32">
+													<SelectValue placeholder="Unit" />
+												</SelectTrigger>
+												<SelectContent>
+													{[
+														"days",
+														"weeks",
+														"months",
+														"year",
+													].map((u) => (
+														<SelectItem
+															key={u}
+															value={u}>
+															{u}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+										</div>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+
+						{/* Stroke & Rehabilitation (PMR) */}
+						<Card className="bg-white shadow-lg">
+							<CardHeader>
+								<CardTitle className="text-xl text-navy-600">
+									PMR — Stroke & Rehabilitation
+								</CardTitle>
+							</CardHeader>
+							<CardContent className="space-y-6">
+								<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+									<div>
+										<Label>Stroke Type</Label>
+										<Select>
+											<SelectTrigger className="mt-2">
+												<SelectValue placeholder="New or Old" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="new">
+													New stroke
+												</SelectItem>
+												<SelectItem value="old">
+													Old stroke
+												</SelectItem>
+											</SelectContent>
+										</Select>
+									</div>
+									<div className="md:col-span-3">
+										<Label>
+											Screen-positive persistent symptoms
+											(check)
+										</Label>
+										<div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2 text-sm">
+											{[
+												"Weakness persists",
+												"Speech difficulty",
+												"Swallowing difficulty",
+												"Cognitive issues (recognition/memory)",
+												"Urinary or bowel control issues",
+											].map((s, i) => (
+												<label
+													key={i}
+													className="flex items-center space-x-2">
+													<Checkbox />{" "}
+													<span>{s}</span>
+												</label>
+											))}
+										</div>
+									</div>
+								</div>
+
+								<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+									<div>
+										<Label>HbA1c (%)</Label>
+										<Input
+											placeholder="Auto"
+											defaultValue="8.2"
+										/>
+									</div>
+									<div>
+										<Label>BP (mmHg)</Label>
+										<Input
+											placeholder="Auto"
+											defaultValue="130/84"
+										/>
+									</div>
+									<div>
+										<Label>LDL (mg/dL)</Label>
+										<Input
+											placeholder="Auto"
+											defaultValue="77"
+										/>
+									</div>
+								</div>
+
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+									<div>
+										<Label>
+											NIHSS / mRS / Scandinavian Scale
+										</Label>
+										<Textarea
+											rows={4}
+											placeholder="Enter scores or notes"
+										/>
+										<Label className="mt-2">GCS</Label>
+										<Textarea
+											rows={3}
+											placeholder="GCS notes"
+										/>
+										<Label className="mt-2">
+											Cognition (MMSE / MOCA / ACER)
+										</Label>
+										<Textarea
+											rows={3}
+											placeholder="Cognition notes"
+										/>
+									</div>
+									<div>
+										<Label>
+											Motor exam (tone, power, reflexes,
+											ROM)
+										</Label>
+										<Textarea
+											rows={4}
+											placeholder="Motor examination notes"
+										/>
+										<Label className="mt-2">Gait</Label>
+										<Textarea
+											rows={3}
+											placeholder="Gait notes"
+										/>
+										<Label className="mt-2">
+											Functional status (FIM / Barthel)
+										</Label>
+										<Textarea
+											rows={3}
+											placeholder="Functional status notes"
+										/>
+									</div>
+								</div>
+
+								<div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+									<div className="md:col-span-2">
+										<Label>
+											Advice (opens Medications)
+										</Label>
+										<Select
+											onValueChange={(value) => {
+												if (onNavigate)
+													onNavigate("medications");
+												else if (
+													typeof window !==
+													"undefined"
+												) {
+													const params =
+														new URLSearchParams(
+															window.location.search
+														);
+													params.set(
+														"tab",
+														"medications"
+													);
+													window.location.search = `?${params}`;
+												}
+											}}>
+											<SelectTrigger className="mt-2">
+												<SelectValue placeholder="Select" />
+											</SelectTrigger>
+											<SelectContent>
+												{[
+													"Syndopa",
+													"Amantadine",
+													"Modafinil",
+													"Baclofen",
+													"Tizanidine",
+													"Tolperisone",
+													"Donepezil",
+													"Memantine",
+													"Bromocriptine",
+													"Botox injection",
+													"Others",
+												].map((m) => (
+													<SelectItem
+														key={m}
+														value={m}>
+														{m}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									</div>
+									<div>
+										<Label>Order Tests</Label>
+										<Select
+											onValueChange={(v) =>
+												addToOrders(v)
+											}>
+											<SelectTrigger className="mt-2">
+												<SelectValue placeholder="Add test" />
+											</SelectTrigger>
+											<SelectContent>
+												{[
+													"HbA1c",
+													"Lipid profile",
+													"Serum creatinine",
+													"Blood urea",
+													"Electrolytes",
+													"Urine routine",
+													"CT",
+													"EEG",
+													"X-ray",
+													"US Shoulder",
+													"US Wrist",
+													"US Hip",
+													"US Knee",
+												].map((t) => (
+													<SelectItem
+														key={t}
+														value={t}>
+														{t}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									</div>
+									<div>
+										<Label>Referrals</Label>
+										<Select
+											onValueChange={(v) =>
+												addToReferrals(v)
+											}>
+											<SelectTrigger className="mt-2">
+												<SelectValue placeholder="Add referral" />
+											</SelectTrigger>
+											<SelectContent>
+												{[
+													"Physiotherapy",
+													"Occupational Therapy",
+													"Speech & Language",
+													"Swallow Therapy",
+													"Orthotics",
+													"Neurology",
+												].map((r) => (
+													<SelectItem
+														key={r}
+														value={r}>
+														{r}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+										<Input
+											className="mt-2"
+											placeholder="Referral personal notes / interventions"
+										/>
+									</div>
+									<div>
+										<Label>Follow-up Advice</Label>
+										<Select>
+											<SelectTrigger className="mt-2">
+												<SelectValue placeholder="Select" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="1m">
+													1 month (spasticity,
+													uncontrolled HbA1c/BP/LDL)
+												</SelectItem>
+												<SelectItem value="3m">
+													3 months (spasticity, good
+													control)
+												</SelectItem>
+												<SelectItem value="6m">
+													6 months (stable, no
+													symptoms)
+												</SelectItem>
+											</SelectContent>
+										</Select>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+					</div>
 				</TabsContent>
 			</Tabs>
 		</div>

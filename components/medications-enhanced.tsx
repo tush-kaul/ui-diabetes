@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -34,6 +35,7 @@ import {
 	TrendingDown,
 	ArrowUp,
 	ArrowDown,
+	Minus,
 	Shield,
 	Bug,
 	Target,
@@ -51,19 +53,64 @@ import {
 	ReferenceArea,
 } from "recharts";
 
+// Types (moved to top-level to avoid TSX parsing issues)
+interface Medication {
+  id: number;
+  status: "Active" | "Stopped" | "On-hold" | "Discontinued";
+  dosage: string;
+  frequency: string;
+  remarks?: string;
+}
+
+interface ManagementMedication extends Omit<Medication, "status"> {
+  name: string;
+  type: string;
+  frequency: string;
+  dosage: string;
+  remarks: string;
+  prescribedBy: string;
+  lastModified: string;
+  status: "Active" | "Stopped" | "On-hold" | "Discontinued";
+  timing?: string;
+  adherence: number;
+  doseTimes?: { morning: number; noon: number; evening: number; bedtime: number };
+  trend?: "up" | "down" | "none";
+}
+
+interface NewMedication {
+  name: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  indication: string;
+  type?: string;
+  timing?: string;
+  doseTimes?: { morning: number; noon: number; evening: number; bedtime: number };
+  trend?: 'up'|'down'|'none';
+}
+
 export default function MedicationsEnhanced() {
-	const [newMedication, setNewMedication] = useState({
+	const [newMedication, setNewMedication] = useState<NewMedication>({
 		name: "",
 		dosage: "",
 		frequency: "",
 		duration: "",
 		indication: "",
+		type: "",
+		timing: "",
+		doseTimes: undefined,
+		trend: 'none',
 	});
 
-	const [editingMedication, setEditingMedication] =
-		useState<Medication | null>(null);
+    const [editingMedication, setEditingMedication] =
+        useState<ManagementMedication | null>(null);
+    const [editingDraft, setEditingDraft] = useState<Partial<ManagementMedication> | null>(null);
 	const [showAddForm, setShowAddForm] = useState(false);
-	const [managementMedications, setManagementMedications] = useState<any>([]);
+    const [managementMedications, setManagementMedications] = useState<any>([]);
+    const [showRecDialog, setShowRecDialog] = useState(false);
+    const [freqMode, setFreqMode] = useState<'structured'|'free'>('structured');
+    const [mounted, setMounted] = useState(false);
+    const a1cCurrent = 8.2; const a1cTarget = 7.5;
 	
 	// Infection and Antibiotics state
 	const [selectedInfection, setSelectedInfection] = useState("");
@@ -272,48 +319,48 @@ export default function MedicationsEnhanced() {
 
 	// Enhanced medication timeline data with dose changes and color coding
 	const medicationTimeline = [
-		{
-			id: 1,
-			name: "Novomix Penfill",
-			type: "Diabetes",
-			periods: [
-				{
-					startDate: "15/01/2020",
-					endDate: "30/06/2021",
-					status: "active",
-					reason: "Initial therapy",
-					dosage: "16-14 units morning/evening",
-					timing: "10 minutes before meals",
-				},
-				{
-					startDate: "01/07/2021",
-					endDate: "31/12/2021",
-					status: "stopped",
-					reason: "Side effects",
-					dosage: "16-14 units",
-					timing: "10 minutes before meals",
-				},
-				{
-					startDate: "01/01/2022",
-					endDate: "01/06/2022",
-					status: "active",
-					reason: "Resumed with dose adjustment",
-					dosage: "18-16 units morning/evening",
-					changeType: "increase",
-					timing: "10 minutes before meals",
-				},
-				{
-					startDate: "01/06/2022",
-					endDate: null,
-					status: "active",
-					reason: "Dose increased for better control",
-					dosage: "20-22/16-18 units morning/evening",
-					changeType: "increase",
-					timing: "10 minutes before meals",
-				},
-			],
-			currentDosage: "20-22 units morning, 16-18 units evening",
-		},
+                {
+                    id: 1,
+                    name: "Novomix Penfill",
+                    type: "Diabetes",
+                    periods: [
+                        {
+                            startDate: "15/01/2020",
+                            endDate: "30/06/2021",
+                            status: "active",
+                            reason: "Initial therapy",
+                            dosage: "16-0-14 units (M-N-E)",
+                            timing: "10 minutes before meals",
+                        },
+                        {
+                            startDate: "01/07/2021",
+                            endDate: "31/12/2021",
+                            status: "stopped",
+                            reason: "Side effects",
+                            dosage: "16-0-14 units",
+                            timing: "10 minutes before meals",
+                        },
+                        {
+                            startDate: "01/01/2022",
+                            endDate: "01/06/2022",
+                            status: "active",
+                            reason: "Resumed with dose adjustment",
+                            dosage: "18-0-16 units (M-N-E)",
+                            changeType: "increase",
+                            timing: "10 minutes before meals",
+                        },
+                        {
+                            startDate: "01/06/2022",
+                            endDate: null,
+                            status: "active",
+                            reason: "Dose increased for better control",
+                            dosage: "22-0-18 units (M-N-E)",
+                            changeType: "increase",
+                            timing: "10 minutes before meals",
+                        },
+                    ],
+                    currentDosage: "22-0-18 units (M-N-E)",
+                },
 		{
 			id: 2,
 			name: "Metformin + Glimepiride",
@@ -524,20 +571,34 @@ export default function MedicationsEnhanced() {
 	];
 
 	// Initialize management medications after currentMedications is defined
-	useEffect(() => {
-		if (managementMedications.length === 0) {
-			setManagementMedications(
-				currentMedications.map((med) => ({
-					...med,
-					remarks: "",
-					prescribedBy: "Dr. Smith",
-					lastModified: "2024-07-15",
-				}))
-			);
-		}
-	}, []);
+    useEffect(() => {
+        if (managementMedications.length === 0) {
+            setManagementMedications(
+                currentMedications.map((med) => {
+                    let doseTimes: any = undefined; let trend: 'up'|'down'|'none' = 'none';
+                    if (med.name === 'Novomix Penfill') { doseTimes = { morning: 22, noon: 0, evening: 18, bedtime: 0 }; trend = 'up'; }
+                    if (med.name === 'Metformin + Glimepiride') { doseTimes = { morning: 1, noon: 0, evening: 1, bedtime: 0 }; trend = 'up'; }
+                    if (med.name === 'Sitagliptin + Dapagliflozin') { doseTimes = { morning: 1, noon: 0, evening: 0, bedtime: 0 }; trend = 'up'; }
+                    if (med.name === 'Losartan + Amlodipine') { doseTimes = { morning: 1, noon: 0, evening: 0, bedtime: 0 }; trend = 'down'; }
+                    if (med.name === 'Aspirin + Atorvastatin') { doseTimes = { morning: 1, noon: 0, evening: 0, bedtime: 0 }; trend = 'none'; }
+                    return ({
+                        ...med,
+                        doseTimes,
+                        trend,
+                        remarks: "",
+                        prescribedBy: "Dr. Smith",
+                        lastModified: "2024-07-15",
+                    });
+                })
+            );
+        }
+    }, []);
 
-	// Antibiotic Recommendation Engine
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    // Antibiotic Recommendation Engine
 	const getAntibioticRecommendations = (targetOrganisms: string[]) => {
 		const recommendations: any[] = [];
 		
@@ -595,14 +656,15 @@ export default function MedicationsEnhanced() {
 		timing?: string;
 	}
 
-	const calculateGanttPosition = (
-		startDate: string,
-		endDate: string | null = null
-	): GanttPosition => {
-		const start = new Date(startDate);
-		const end = endDate ? new Date(endDate) : new Date();
-		const chartStart = new Date("2018-01-01");
-		const chartEnd = new Date("2024-12-31");
+    const calculateGanttPosition = (
+        startDate: string,
+        endDate: string | null = null
+    ): GanttPosition => {
+        const start = new Date(startDate);
+        const chartStart = new Date("2018-01-01");
+        const chartEnd = new Date("2024-12-31");
+        // Avoid hydration mismatches: before mount, avoid using new Date() (which differs server/client)
+        const end = endDate ? new Date(endDate) : (mounted ? new Date() : chartEnd);
 
 		const totalDuration = chartEnd.getTime() - chartStart.getTime();
 		const startOffset =
@@ -1011,43 +1073,34 @@ export default function MedicationsEnhanced() {
 		);
 	};
 
-	interface Medication {
-		id: number;
-		status: "Active" | "Stopped";
-		// Other properties of medication
-	}
+// Types are declared at top of file
 
-	const handleStatusChange = (
-		id: number,
-		newStatus: "Active" | "Stopped"
-	) => {
-		setManagementMedications((prev: Medication[]) =>
-			prev.map((med: Medication) =>
-				med.id === id
-					? {
-							...med,
-							status: newStatus,
-							lastModified: new Date()
-								.toISOString()
-								.split("T")[0],
-					  }
-					: med
-			)
-		);
-	};
-
-	interface Medication {
-		id: number;
-		status: "Active" | "Stopped";
-		dosage: string;
-		frequency: string;
-		remarks?: string;
-		// Other properties of medication
-	}
-
-	const handleEditMedication = (medication: Medication) => {
-		setEditingMedication(medication);
-	};
+const handleStatusChange = (
+    id: number,
+    newStatus: "Active" | "Stopped" | "On-hold"
+) => {
+    if (newStatus === 'Stopped' && typeof window !== 'undefined') {
+        const ok = window.confirm('Stop this medication?');
+        if (!ok) return;
+    }
+    setManagementMedications((prev: Medication[]) =>
+        prev.map((med: Medication) =>
+            med.id === id
+                ? {
+                        ...med,
+                        status: newStatus,
+                        lastModified: new Date()
+                            .toISOString()
+                            .split("T")[0],
+                  }
+                : med
+        )
+    );
+};
+      const handleEditMedication = (medication: ManagementMedication) => {
+          setEditingMedication(medication);
+          setEditingDraft({ dosage: medication.dosage, frequency: medication.frequency, timing: medication.timing, remarks: medication.remarks });
+      };
 
 	interface UpdatedMedicationData {
 		dosage?: string;
@@ -1055,46 +1108,28 @@ export default function MedicationsEnhanced() {
 		remarks?: string;
 	}
 
-	const handleSaveMedication = (
-		id: number,
-		updatedData: UpdatedMedicationData
-	) => {
-		setManagementMedications((prev: ManagementMedication[]) =>
-			prev.map((med: ManagementMedication) =>
-				med.id === id
-					? {
-							...med,
-							...updatedData,
-							lastModified: new Date()
-								.toISOString()
-								.split("T")[0],
-					  }
-					: med
-			)
-		);
-		setEditingMedication(null);
-	};
-
-	interface NewMedication {
-		name: string;
-		dosage: string;
-		frequency: string;
-		duration: string;
-		indication: string;
-	}
-
-	interface ManagementMedication extends Omit<Medication, "status"> {
-		name: string;
-		type: string;
-		frequency: string;
-		dosage: string;
-		remarks: string;
-		prescribedBy: string;
-		lastModified: string;
-		status: "Active" | "Stopped";
-		timing?: string;
-		adherence: number;
-	}
+    const handleSaveMedication = (
+        id: number,
+        updatedData: UpdatedMedicationData
+    ) => {
+        setManagementMedications((prev: ManagementMedication[]) =>
+            prev.map((med: ManagementMedication) =>
+                med.id === id
+                    ? {
+                            ...med,
+                            ...updatedData,
+                            // if frequency edited, prefer explicit frequency string and clear structured doseTimes so UI shows it
+                            ...(updatedData.frequency ? { doseTimes: undefined, trend: 'none' as const } : {}),
+                            lastModified: new Date()
+                                .toISOString()
+                                .split("T")[0],
+                      }
+                    : med
+            )
+        );
+        setEditingMedication(null);
+        setEditingDraft(null);
+    };
 
 	const handleAddMedication = (newMed: NewMedication) => {
 		const newId =
@@ -1115,16 +1150,24 @@ export default function MedicationsEnhanced() {
 				prescribedBy: "Dr. Smith",
 				lastModified: new Date().toISOString().split("T")[0],
 				remarks: "",
+				type: newMed.type || 'Others',
+				timing: newMed.timing || '',
+				doseTimes: newMed.doseTimes,
+				trend: newMed.trend || 'none',
 			},
 		]);
-		setShowAddForm(false);
-		setNewMedication({
-			name: "",
-			dosage: "",
-			frequency: "",
-			duration: "",
-			indication: "",
-		});
+    setShowAddForm(false);
+    setNewMedication({
+        name: "",
+        dosage: "",
+        frequency: "",
+        duration: "",
+        indication: "",
+        type: '',
+        timing: '',
+        doseTimes: undefined,
+        trend: 'none',
+    });
 	};
 
 	const renderManagementTable = () => {
@@ -1146,11 +1189,12 @@ export default function MedicationsEnhanced() {
 				{/* Add new medication form */}
 				{showAddForm && (
 					<Card className="border-blue-200 bg-blue-50">
-						<CardHeader>
-							<CardTitle className="text-lg text-blue-800">
-								Add New Medication
-							</CardTitle>
-						</CardHeader>
+                        <CardHeader>
+                            <CardTitle className="text-lg text-blue-800 flex flex-wrap items-center justify-between gap-2">
+                                <span className="min-w-0 break-words">Manual Entry — Add New Medication</span>
+                                <Button size="sm" variant="outline" className="shrink-0" onClick={() => setNewMedication({ name:'', dosage:'', frequency:'', duration:'', indication:'', type:'', timing:'' })}>Clear Form</Button>
+                            </CardTitle>
+                        </CardHeader>
 						<CardContent>
 							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 								<div>
@@ -1169,12 +1213,12 @@ export default function MedicationsEnhanced() {
 										placeholder="Enter medication name"
 									/>
 								</div>
-								<div>
-									<Label htmlFor="new-med-dosage">
-										Dosage
-									</Label>
-									<Input
-										id="new-med-dosage"
+                                <div>
+                                    <Label htmlFor="new-med-dosage">
+                                        Dosage
+                                    </Label>
+                                    <Input
+                                        id="new-med-dosage"
 										value={newMedication.dosage}
 										onChange={(e) =>
 											setNewMedication({
@@ -1185,43 +1229,100 @@ export default function MedicationsEnhanced() {
 										placeholder="e.g., 500mg"
 									/>
 								</div>
-								<div>
-									<Label htmlFor="new-med-frequency">
-										Frequency
-									</Label>
-									<Select
-										value={newMedication.frequency}
-										onValueChange={(value) =>
-											setNewMedication({
-												...newMedication,
-												frequency: value,
-											})
-										}>
-										<SelectTrigger>
-											<SelectValue placeholder="Select frequency" />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="once-daily">
-												Once daily
-											</SelectItem>
-											<SelectItem value="twice-daily">
-												Twice daily
-											</SelectItem>
-											<SelectItem value="three-times-daily">
-												Three times daily
-											</SelectItem>
-											<SelectItem value="as-needed">
-												As needed
-											</SelectItem>
-										</SelectContent>
-									</Select>
-								</div>
-								<div>
-									<Label htmlFor="new-med-indication">
-										Indication
-									</Label>
-									<Input
-										id="new-med-indication"
+                                <div>
+                                    <Label htmlFor="new-med-frequency">Frequency</Label>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <Button type="button" size="sm" variant={freqMode==='structured'?'default':'outline'} onClick={()=>setFreqMode('structured')}>Structured (M-N-E-B)</Button>
+                                        <Button type="button" size="sm" variant={freqMode==='free'?'default':'outline'} onClick={()=>setFreqMode('free')}>Free text</Button>
+                                    </div>
+                                    {freqMode === 'structured' ? (
+                                        <div className="mt-2 space-y-2">
+                                            <div className="grid grid-cols-4 gap-2">
+                                                {(['morning','noon','evening','bedtime'] as Array<keyof NonNullable<NewMedication['doseTimes']>>).map((k) => (
+                                                    <div key={k} className="flex flex-col">
+                                                        <Label className="text-[11px] capitalize">{k}</Label>
+                                                        <Input type="number" step="0.5" min={0} className="h-8 text-xs" value={newMedication.doseTimes?.[k] ?? ''}
+                                                            onChange={(e)=>{
+                                                                const valStr = e.target.value;
+                                                                const val = valStr === '' ? undefined : parseFloat(valStr);
+                                                                const prev = newMedication.doseTimes ?? {morning:0, noon:0, evening:0, bedtime:0};
+                                                                const next: NonNullable<NewMedication['doseTimes']> = { ...prev };
+                                                                next[k] = val ?? 0;
+                                                                setNewMedication({ ...newMedication, doseTimes: next });
+                                                            }} />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs text-gray-600">Trend:</span>
+                                                <Button type="button" size="sm" variant={newMedication.trend==='up'?'default':'outline'} onClick={()=>setNewMedication({...newMedication, trend:'up'})}><ArrowUp className="h-3 w-3 mr-1"/>Up</Button>
+                                                <Button type="button" size="sm" variant={newMedication.trend==='down'?'default':'outline'} onClick={()=>setNewMedication({...newMedication, trend:'down'})}><ArrowDown className="h-3 w-3 mr-1"/>Down</Button>
+                                                <Button type="button" size="sm" variant={!newMedication.trend || newMedication.trend==='none'?'default':'outline'} onClick={()=>setNewMedication({...newMedication, trend:'none'})}><Minus className="h-3 w-3 mr-1"/>None</Button>
+                                            </div>
+                                            <div className="text-xs text-gray-700">
+                                                Preview: {
+                                                    (()=>{
+                                                        const dt = newMedication.doseTimes || {morning:0,noon:0,evening:0,bedtime:0};
+                                                        const base = `${dt.morning||0}-${dt.noon||0}-${dt.evening||0}` + (dt.bedtime?`-${dt.bedtime}`:'');
+                                                        const suf = newMedication.trend==='up'?'↑': newMedication.trend==='down'?'↓':'';
+                                                        return base.replace(/\.5/g,'½') + suf;
+                                                    })()
+                                                }
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="mt-2 space-y-2">
+                                            <Select
+                                                value={newMedication.frequency}
+                                                onValueChange={(value) => setNewMedication({ ...newMedication, frequency: value })}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select frequency" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="once-daily">Once daily</SelectItem>
+                                                    <SelectItem value="twice-daily">Twice daily</SelectItem>
+                                                    <SelectItem value="three-times-daily">Three times daily</SelectItem>
+                                                    <SelectItem value="as-needed">As needed</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <div className="flex flex-wrap gap-1">
+                                                {['1-0-0','1-0-1','0-1-1','1-1-1','0-0-1','0-1-0'].map(p => (
+                                                    <Button key={p} type="button" size="sm" variant="outline" className="h-6 px-2 text-xs"
+                                                        onClick={() => setNewMedication({ ...newMedication, frequency: p })}>{p}</Button>
+                                                ))}
+                                            </div>
+                                            <Input placeholder="Custom pattern e.g., 1-0-½" className="h-8 text-xs" value={newMedication.frequency}
+                                                onChange={(e)=> setNewMedication({ ...newMedication, frequency: e.target.value })} />
+                                        </div>
+                                    )}
+                                </div>
+                <div>
+                    <Label htmlFor="new-med-type">Type/Category</Label>
+                    <Select value={newMedication.type ?? ''} onValueChange={(value) => setNewMedication({ ...newMedication, type: value })}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select type/category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="Diabetes">Diabetes</SelectItem>
+                            <SelectItem value="Hypertension">Hypertension</SelectItem>
+                            <SelectItem value="Cardiovascular Protection">Cardiovascular Protection</SelectItem>
+                            <SelectItem value="Blood Thinner">Blood Thinner</SelectItem>
+                            <SelectItem value="Cholesterol">Cholesterol</SelectItem>
+                            <SelectItem value="Immunomodulator">Immunomodulator</SelectItem>
+                            <SelectItem value="Others">Others</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div>
+                    <Label htmlFor="new-med-timing">Detailed Timing</Label>
+                    <Input id="new-med-timing" value={newMedication.timing ?? ''} onChange={(e) => setNewMedication({ ...newMedication, timing: e.target.value })} placeholder="e.g., After food / Morning / 10 min before meals" />
+                </div>
+                <div>
+                    <Label htmlFor="new-med-indication">
+                        Indication
+                    </Label>
+                    <Input
+                                        id="new-med-indication"
 										value={newMedication.indication}
 										onChange={(e) =>
 											setNewMedication({
@@ -1373,44 +1474,34 @@ export default function MedicationsEnhanced() {
 															</div>
 														</td>
 														<td className="p-2 sm:p-3">
-															{editingMedication?.id ===
-															medication.id ? (
-																<Input
-																	defaultValue={
-																		medication.dosage
-																	}
-																	className="w-full text-xs"
-																	onBlur={(
-																		e
-																	) =>
-																		handleSaveMedication(
-																			medication.id,
-																			{
-																				dosage: e
-																					.target
-																					.value,
-																			}
-																		)
-																	}
-																/>
-															) : (
-																<span className="text-xs">
-																	{
-																		medication.dosage
-																	}
-																</span>
-															)}
-														</td>
+                                {editingMedication?.id === medication.id ? (
+                                    <Input
+                                        value={editingDraft?.dosage ?? ''}
+                                        className="w-full text-xs"
+                                        onChange={(e) => setEditingDraft((prev) => ({ ...(prev||{}), dosage: e.target.value }))}
+                                    />
+                                ) : (
+                                    <span className="text-xs break-words">{medication.dosage}</span>
+                                )}
+                            </td>
+                            <td className="p-2 sm:p-3">
+                                {editingMedication?.id === medication.id ? (
+                                    <Input
+                                        value={editingDraft?.frequency ?? ''}
+                                        className="w-full text-xs"
+                                        onChange={(e) => setEditingDraft((prev) => ({ ...(prev||{}), frequency: e.target.value }))}
+                                    />
+                                ) : (
+                                    <span className="text-xs font-semibold break-words">
+                                        {medication.doseTimes
+                                            ? `${medication.doseTimes.morning || 0}-${medication.doseTimes.noon || 0}-${medication.doseTimes.evening || 0}${medication.doseTimes.bedtime ? `-${medication.doseTimes.bedtime}` : ''}${medication.trend === 'up' ? '↑' : medication.trend === 'down' ? '↓' : ''}`.replace(/\.5/g, '½')
+                                            : medication.frequency}
+                                    </span>
+                                )}
+                            </td>
 														<td className="p-2 sm:p-3">
-															<span className="text-xs">
-																{
-																	medication.frequency
-																}
-															</span>
-														</td>
-														<td className="p-2 sm:p-3">
-															<div className="text-xs">
-																<div className="font-medium text-blue-600">
+															<div className="text-xs break-words">
+																<div className="font-medium text-blue-600 break-words">
 																	{medication.timing ||
 																		"Not specified"}
 																</div>
@@ -1454,65 +1545,72 @@ export default function MedicationsEnhanced() {
 																)}
 															</div>
 														</td>
+                            <td className="p-2 sm:p-3">
+                                {medication.status === 'Active' && (
+                                    <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">Active</Badge>
+                                )}
+                                {medication.status === 'Stopped' && (
+                                    <Badge className="bg-red-100 text-red-800 border-red-200 text-xs">Stopped</Badge>
+                                )}
+                                {medication.status === 'On-hold' && (
+                                    <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs">On-hold</Badge>
+                                )}
+                                {medication.status === 'Discontinued' && (
+                                    <Badge className="bg-slate-100 text-slate-800 border-slate-200 text-xs">Discontinued</Badge>
+                                )}
+                            </td>
 														<td className="p-2 sm:p-3">
-															<Badge
-																variant={
-																	medication.status ===
-																	"Active"
-																		? "default"
-																		: "secondary"
-																}
-																className="text-xs">
-																{
-																	medication.status
-																}
-															</Badge>
-														</td>
-														<td className="p-2 sm:p-3">
-															<div className="flex space-x-1">
-																<Button
-																	size="sm"
-																	variant="outline"
-																	onClick={() =>
-																		handleEditMedication(
-																			medication
-																		)
-																	}
-																	className="p-1 h-6 w-6"
-																	title="Edit medication">
-																	<Edit className="h-3 w-3" />
-																</Button>
-																{medication.status ===
-																"Active" ? (
-																	<Button
-																		size="sm"
-																		variant="outline"
-																		onClick={() =>
-																			handleStatusChange(
-																				medication.id,
-																				"Stopped"
-																			)
-																		}
-																		className="p-1 h-6 w-6"
-																		title="Stop medication">
-																		<Pause className="h-3 w-3" />
-																	</Button>
-																) : (
-																	<Button
-																		size="sm"
-																		variant="outline"
-																		onClick={() =>
-																			handleStatusChange(
-																				medication.id,
-																				"Active"
-																			)
-																		}
-																		className="p-1 h-6 w-6"
-																		title="Start medication">
-																		<Play className="h-3 w-3" />
-																	</Button>
-																)}
-															</div>
+                                <div className="flex space-x-1">
+                                    {editingMedication?.id === medication.id ? (
+                                        <>
+                                            <Button
+                                                size="sm"
+                                                className="p-1 h-6"
+                                                onClick={() => handleSaveMedication(medication.id, { dosage: editingDraft?.dosage, frequency: editingDraft?.frequency })}
+                                                title="Save">
+                                                <Save className="h-3 w-3" />
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="p-1 h-6"
+                                                onClick={() => { setEditingMedication(null); setEditingDraft(null); }}
+                                                title="Cancel">
+                                                Cancel
+                                            </Button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => handleEditMedication(medication)}
+                                                className="p-1 h-6 w-6"
+                                                title="Edit medication">
+                                                <Edit className="h-3 w-3" />
+                                            </Button>
+                                            {medication.status === 'Active' ? (
+                                                <Button
+                                                    size="sm"
+                                                    variant="destructive"
+                                                    onClick={() => handleStatusChange(medication.id, 'Stopped')}
+                                                    className="p-1 h-6 w-6"
+                                                    title="Stop medication">
+                                                    <Pause className="h-3 w-3" />
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => handleStatusChange(medication.id, 'Active')}
+                                                    className="p-1 h-6 w-6"
+                                                    title="Start medication">
+                                                    <Play className="h-3 w-3" />
+                                                </Button>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
 														</td>
 													</tr>
 												)
@@ -1558,7 +1656,7 @@ export default function MedicationsEnhanced() {
 			<Tabs
 				defaultValue="timeline"
 				className="w-full space-y-2 sm:space-y-0">
-				<TabsList className="mb-4 w-full flex-wrap h-auto gap-1 p-1">
+				<TabsList className="mb-4 w-full h-auto gap-1 p-1 overflow-x-auto whitespace-nowrap">
 					<TabsTrigger
 						value="timeline"
 						className="flex-1 text-xs sm:text-sm">
@@ -1569,11 +1667,7 @@ export default function MedicationsEnhanced() {
 						className="flex-1 text-xs sm:text-sm">
 						Management
 					</TabsTrigger>
-					<TabsTrigger
-						value="infections-antibiotics"
-						className="flex-1 text-xs sm:text-sm">
-						Infections & Antibiotics
-					</TabsTrigger>
+                {/* Infections & Antibiotics tab removed per spec */}
 				</TabsList>
 
 				<TabsContent value="timeline">
@@ -1598,16 +1692,55 @@ export default function MedicationsEnhanced() {
 										<Table className="mr-2 h-5 w-5" />
 										Medication Management
 									</div>
-									<Button
-										onClick={() => setShowAddForm(true)}
-										className="text-xs sm:text-sm">
-										<Plus className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
-										Add Medication
-									</Button>
+                            <Button
+                                onClick={() => { setShowRecDialog(true); }}
+                                className="text-xs sm:text-sm">
+                                <Plus className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                                Add Medication
+                            </Button>
 								</CardTitle>
 							</CardHeader>
-							<CardContent>{renderManagementTable()}</CardContent>
-						</Card>
+                    <CardContent>
+                        {renderManagementTable()}
+                        <Dialog open={showRecDialog} onOpenChange={setShowRecDialog}>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Add Medication</DialogTitle>
+                                    <DialogDescription className="break-words">Choose from recommendations or start manual entry.</DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-2 text-sm break-words">
+                                    {a1cCurrent > a1cTarget && (
+                                        <div className="p-2 bg-blue-50 border border-blue-200 rounded">
+                                            HbA1c {a1cCurrent}% above target {a1cTarget}%. Consider GLP-1 RA or SGLT2i.
+                                        </div>
+                                    )}
+                                    <div className="p-2 bg-amber-50 border border-amber-200 rounded">
+                                        For insulin, use explicit times like 22-0-18 (M–N–E) and titrate per SMBG.
+                                    </div>
+                                    <div className="pt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <Button variant="outline" className="justify-start text-left h-auto whitespace-normal break-words" onClick={() => {
+                                            setNewMedication({ name: 'Dapagliflozin', dosage: '10mg', frequency: '1-0-0', duration: '3 months', indication: 'Type 2 DM (SGLT2i)', type: 'Diabetes', timing: 'Morning' });
+                                            setShowAddForm(true);
+                                            setShowRecDialog(false);
+                                        }}>Use SGLT2i (Dapagliflozin 10mg 1-0-0)</Button>
+                                        <Button variant="outline" className="justify-start text-left h-auto whitespace-normal break-words" onClick={() => {
+                                            setNewMedication({ name: 'Semaglutide', dosage: '0.25mg', frequency: '1-0-0', duration: '3 months', indication: 'Type 2 DM (GLP-1 RA)', type: 'Diabetes', timing: 'Weekly' });
+                                            setShowAddForm(true);
+                                            setShowRecDialog(false);
+                                        }}>Use GLP-1 RA (Semaglutide 0.25mg)</Button>
+                                    </div>
+                                    <div className="pt-3">
+                                        <Button className="w-full" onClick={() => { setShowRecDialog(false); setShowAddForm(true); setNewMedication({ name: '', dosage: '', frequency: '', duration: '', indication: '', type: 'Others', timing: '' }); }}>Start Manual Entry</Button>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex justify-end">
+                                    <Button variant="outline" onClick={() => setShowRecDialog(false)}>Close</Button>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    </CardContent>
+                </Card>
 
 						{/* Adherence and Adverse Effects Section */}
 						<Card className="bg-white shadow-lg">

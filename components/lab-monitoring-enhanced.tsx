@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,13 +44,68 @@ export default function LabMonitoringEnhanced() {
 		microalbumin: "chart",
 	});
 
-	const [expandedSections, setExpandedSections] = useState({
-		monthly: true,
-		quarterly: true,
-		yearly: true,
-		renal: true,
-		other: false,
-	});
+    const [expandedSections, setExpandedSections] = useState({
+        monthly: true,
+        quarterly: true,
+        yearly: true,
+        renal: true,
+        other: false,
+    });
+
+    // Per-chart expand/collapse with persistence
+    const defaultExpandedCharts: Record<string, boolean> = {
+        fbs: true,
+        ppbs: true,
+        hba1c: true,
+        bp: false,
+        lipids: false,
+        ldl: false,
+        hdl: false,
+        tg: false,
+        ascvd: false,
+        creatinine: false,
+        potassium: false,
+        acr: false,
+        microalbumin: false,
+        weight: false,
+        bmi: false,
+    };
+    const [expandedCharts, setExpandedCharts] = useState<Record<string, boolean>>(defaultExpandedCharts);
+
+    // Load/save expand state and handle deep links (?metric=...)
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem("labs_expanded_charts");
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed && typeof parsed === "object") {
+                    setExpandedCharts((prev) => ({ ...prev, ...parsed }));
+                }
+            }
+        } catch {}
+        // Deep link scroll by query param
+        const params = new URLSearchParams(window.location.search);
+        const m = params.get("metric") || params.get("subtab") || params.get("anchor");
+        if (m) {
+            setExpandedCharts((prev) => ({ ...prev, [m.toLowerCase()]: true }));
+            // defer scroll
+            setTimeout(() => {
+                const el = document.getElementById(m.toLowerCase());
+                el?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 200);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem("labs_expanded_charts", JSON.stringify(expandedCharts));
+        } catch {}
+    }, [expandedCharts]);
+
+    const toggleChart = (metric: string) => {
+        setExpandedCharts((prev) => ({ ...prev, [metric]: !prev[metric] }));
+    };
 
 	const monthlyMonitoring = {
 		FBS: [
@@ -79,6 +134,24 @@ export default function LabMonitoringEnhanced() {
 			{ date: "2024-05", systolic: 130, diastolic: 84 },
 			{ date: "2024-06", systolic: 132, diastolic: 86 },
 			{ date: "2024-07", systolic: 130, diastolic: 84 },
+		],
+		Weight: [
+			{ date: "2024-01", value: 68 },
+			{ date: "2024-02", value: 67.5 },
+			{ date: "2024-03", value: 67.8 },
+			{ date: "2024-04", value: 67.2 },
+			{ date: "2024-05", value: 67.0 },
+			{ date: "2024-06", value: 66.8 },
+			{ date: "2024-07", value: 66.9 },
+		],
+		BMI: [
+			{ date: "2024-01", value: 27.0 },
+			{ date: "2024-02", value: 26.8 },
+			{ date: "2024-03", value: 26.9 },
+			{ date: "2024-04", value: 26.6 },
+			{ date: "2024-05", value: 26.5 },
+			{ date: "2024-06", value: 26.4 },
+			{ date: "2024-07", value: 26.4 },
 		],
 	};
 
@@ -224,46 +297,62 @@ export default function LabMonitoringEnhanced() {
 		}));
 	};
 
-	const renderDataView = (
-		data: any[],
-		metric: string,
-		title: string,
-		thresholds?: any
-	) => {
-		const isChart = viewMode[metric as keyof typeof viewMode] === "chart";
+    const renderDataView = (
+        data: any[],
+        metric: string,
+        title: string,
+        thresholds?: any
+    ) => {
+        const isChart = viewMode[metric as keyof typeof viewMode] === "chart";
 
-		return (
-			<div>
-				<div className="flex items-center justify-between mb-2">
-					<h4 className="font-semibold flex items-center">
-						{title}{" "}
-						{getTrendIcon(
-							data,
-							Object.keys(data[0]).find(
-								(key) => key !== "date"
-							) || "value"
-						)}
-					</h4>
-					<Toggle
-						pressed={!isChart}
-						onPressedChange={() =>
-							toggleViewMode(metric as keyof typeof viewMode)
-						}
-						aria-label={`Toggle ${title} view`}>
-						{isChart ? (
-							<Table className="h-4 w-4" />
-						) : (
-							<BarChart3 className="h-4 w-4" />
-						)}
-					</Toggle>
-				</div>
+        const lastUpdated = useMemo(() => (data?.length ? data[data.length - 1]?.date : undefined), [data]);
 
-				{isChart ? (
-					<ResponsiveContainer
-						width="100%"
-						height={180}
-						className="sm:h-[200px]">
-						<LineChart data={data}>
+        const expanded = expandedCharts[metric] ?? false;
+
+        return (
+            <div id={metric} className="scroll-mt-24">
+                <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-semibold flex items-center gap-2">
+                        {title}{" "}
+                        {getTrendIcon(
+                            data,
+                            Object.keys(data[0]).find(
+                                (key) => key !== "date"
+                            ) || "value"
+                        )}
+                        {lastUpdated && (
+                            <span className="ml-2 text-xs text-gray-500">Updated: {lastUpdated}</span>
+                        )}
+                    </h4>
+                    <div className="flex items-center gap-2">
+                        <Toggle
+                            pressed={!isChart}
+                            onPressedChange={() =>
+                                toggleViewMode(metric as keyof typeof viewMode)
+                            }
+                            aria-label={`Toggle ${title} view`}>
+                            {isChart ? (
+                                <Table className="h-4 w-4" />
+                            ) : (
+                                <BarChart3 className="h-4 w-4" />
+                            )}
+                        </Toggle>
+                        <Button variant="outline" size="sm" onClick={() => toggleChart(metric)} className="h-8">
+                            {expanded ? (
+                                <><ChevronUp className="h-4 w-4 mr-1" /> Collapse</>
+                            ) : (
+                                <><ChevronDown className="h-4 w-4 mr-1" /> Expand</>
+                            )}
+                        </Button>
+                    </div>
+                </div>
+
+                {!expanded ? null : isChart ? (
+                    <ResponsiveContainer
+                        width="100%"
+                        height={180}
+                        className="sm:h-[200px]">
+                        <LineChart data={data}>
 							<CartesianGrid strokeDasharray="3 3" />
 							<XAxis dataKey="date" />
 							<YAxis />
@@ -275,8 +364,8 @@ export default function LabMonitoringEnhanced() {
 								labelFormatter={(label) => `Date: ${label}`}
 							/>
 
-							{/* Threshold zones based on metric */}
-							{metric === "fbs" && (
+                        {/* Threshold zones based on metric */}
+                        {metric === "fbs" && (
 								<>
 									<ReferenceArea
 										y1={70}
@@ -306,7 +395,47 @@ export default function LabMonitoringEnhanced() {
 										}}
 									/>
 								</>
-							)}
+                        )}
+                        {metric === "creatinine" && (
+                            <>
+                                <ReferenceLine y={1.2} stroke="#ef4444" strokeDasharray="5 5" label={{ value: "Max 1.2 mg/dl", position: "insideTopRight" }} />
+                            </>
+                        )}
+                        {metric === "potassium" && (
+                            <>
+                                <ReferenceArea y1={3.5} y2={5.0} fill="#22c55e" fillOpacity={0.1} />
+                                <ReferenceLine y={3.5} stroke="#eab308" strokeDasharray="5 5" />
+                                <ReferenceLine y={5.0} stroke="#eab308" strokeDasharray="5 5" />
+                            </>
+                        )}
+                        {metric === "acr" && (
+                            <>
+                                <ReferenceLine y={30} stroke="#ef4444" strokeDasharray="5 5" label={{ value: "Max 30 mg/g", position: "insideTopRight" }} />
+                            </>
+                        )}
+                        {metric === "microalbumin" && (
+                            <>
+                                <ReferenceLine y={30} stroke="#ef4444" strokeDasharray="5 5" label={{ value: "Max 30 mg/g", position: "insideTopRight" }} />
+                            </>
+                        )}
+                        {metric === "ldl" && (
+                            <ReferenceLine y={100} stroke="#ef4444" strokeDasharray="5 5" label={{ value: "LDL <100", position: "insideTopRight" }} />
+                        )}
+                        {metric === "hdl" && (
+                            <ReferenceLine y={40} stroke="#22c55e" strokeDasharray="5 5" label={{ value: ">40", position: "insideBottomRight" }} />
+                        )}
+                        {metric === "tg" && (
+                            <ReferenceLine y={150} stroke="#ef4444" strokeDasharray="5 5" label={{ value: "TG <150", position: "insideTopRight" }} />
+                        )}
+                        {metric === "weight" && (
+                            <ReferenceArea y1={65} y2={72} fill="#eab308" fillOpacity={0.08} />
+                        )}
+                        {metric === "bmi" && (
+                            <>
+                                <ReferenceArea y1={18.5} y2={24.9} fill="#22c55e" fillOpacity={0.08} />
+                                <ReferenceArea y1={25} y2={29.9} fill="#eab308" fillOpacity={0.06} />
+                            </>
+                        )}
 							{metric === "ppbs" && (
 								<>
 									<ReferenceArea
@@ -478,21 +607,21 @@ export default function LabMonitoringEnhanced() {
 							)}
 						</LineChart>
 					</ResponsiveContainer>
-				) : (
-					<div className="border rounded-lg overflow-x-auto">
-						<table className="w-full text-xs sm:text-sm min-w-full">
-							<thead className="bg-gray-50">
-								<tr>
-									<th className="p-2 sm:p-3 text-left">
-										Date
-									</th>
-									<th className="p-2 sm:p-3 text-left">
-										Value
-									</th>
-									<th className="p-2 sm:p-3 text-left hidden sm:table-cell">
-										Optimal Range
-									</th>
-									<th className="p-2 sm:p-3 text-left">
+                ) : (
+                    <div className="border rounded-lg overflow-x-auto">
+                        <table className="w-full text-xs sm:text-sm min-w-full">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="p-2 sm:p-3 text-left">
+                                        Date
+                                    </th>
+                                    <th className="p-2 sm:p-3 text-left">
+                                        Value
+                                    </th>
+                                    <th className="p-2 sm:p-3 text-left hidden sm:table-cell">
+                                        Optimal Range
+                                    </th>
+                                    <th className="p-2 sm:p-3 text-left">
 										Status
 									</th>
 								</tr>
@@ -600,7 +729,7 @@ export default function LabMonitoringEnhanced() {
 			<Tabs
 				defaultValue="trackers"
 				className="w-full space-y-2 sm:space-y-0">
-				<TabsList className="mb-4 w-full flex-wrap h-auto gap-1 p-1">
+				<TabsList className="mb-4 w-full h-auto gap-1 p-1 overflow-x-auto whitespace-nowrap">
 					<TabsTrigger
 						value="trackers"
 						className="flex-1 text-xs sm:text-sm">
@@ -655,6 +784,22 @@ export default function LabMonitoringEnhanced() {
 												unit: " mmHg",
 												optimal: "≤130/80",
 											}
+										)}
+									</div>
+									<div>
+										{renderDataView(
+											monthlyMonitoring.Weight,
+											"weight",
+											"Weight (kg)",
+											{ unit: " kg" }
+										)}
+									</div>
+									<div>
+										{renderDataView(
+											monthlyMonitoring.BMI,
+											"bmi",
+											"BMI",
+											{ unit: " kg/m²" }
 										)}
 									</div>
 								</div>
@@ -775,6 +920,34 @@ export default function LabMonitoringEnhanced() {
 											yearlyMonitoring.ASCVD,
 											"ascvd",
 											"ASCVD Risk Score (%)"
+										)}
+									</div>
+								</div>
+
+								{/* Split lipid components into separate charts */}
+								<div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mt-4">
+									<div>
+										{renderDataView(
+											yearlyMonitoring.Lipids.map((d:any)=>({date:d.date, value:d.LDL})),
+											"ldl",
+											"LDL (mg/dl)",
+											{unit:"mg/dl"}
+										)}
+									</div>
+									<div>
+										{renderDataView(
+											yearlyMonitoring.Lipids.map((d:any)=>({date:d.date, value:d.HDL})),
+											"hdl",
+											"HDL (mg/dl)",
+											{unit:"mg/dl"}
+										)}
+									</div>
+									<div>
+										{renderDataView(
+											yearlyMonitoring.Lipids.map((d:any)=>({date:d.date, value:d.Triglycerides})),
+											"tg",
+											"Triglycerides (mg/dl)",
+											{unit:"mg/dl"}
 										)}
 									</div>
 								</div>

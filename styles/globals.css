@@ -81,10 +81,44 @@
 }
 
 @layer base {
+  /* Prevent layout shift when dialogs/selects open by reserving scrollbar gutter */
+  html {
+    /* Always reserve space for vertical scrollbar */
+    overflow-y: scroll;
+    /* Modern browsers: keep layout stable when scrollbars appear */
+    scrollbar-gutter: stable both-edges;
+  }
+  :root {
+    /* Prevent react-remove-scroll from adding padding-right when it locks */
+    --removed-body-scroll-bar-size: 0px !important;
+  }
+  body {
+    /* Keep width stable even when Radix locks scroll */
+    scrollbar-gutter: stable both-edges;
+    /* Force persistent scrollbar for Windows classic scrollbars */
+    overflow-y: scroll;
+  }
+  /* Keep RemoveScroll's padding compensation to avoid width jumps
+     (we already reserve gutter to reduce jitter). */
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Neutralize Radix focus guards so they don't affect flow */
+[data-radix-focus-guard] {
+  position: fixed !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  outline: none !important;
+}
+
+/* Ensure Radix popper wrappers never affect layout flow */
+[data-radix-popper-content-wrapper] {
+  position: fixed !important;
+  inset: auto auto auto auto;
 }

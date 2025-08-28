@@ -411,7 +411,7 @@ export default function ComprehensiveAssessmentFunctional({
 				value={activeTab}
 				onValueChange={setActiveTab}
 				className="w-full">
-				<TabsList className="mb-4 flex-wrap">
+				<TabsList className="mb-4 overflow-x-auto whitespace-nowrap">
 					<TabsTrigger value="complications">
 						Complications Assessment
 					</TabsTrigger>

@@ -1144,28 +1144,20 @@ Dr. Michael Chen`,
 			</h1>
 
 			<Tabs
-				defaultValue={initialSubTab || "adherence"}
+				defaultValue={initialSubTab || "recommendations"}
 				className="w-full space-y-2 sm:space-y-0">
-				<TabsList className="mb-4 flex flex-wrap gap-2">
-					<TabsTrigger
-						value="adherence"
-						className="text-xs sm:text-sm">
+				<TabsList className="mb-4 flex gap-2 overflow-x-auto whitespace-nowrap">
+					<TabsTrigger value="recommendations" className="text-xs sm:text-sm">
+						AI Insights
+					</TabsTrigger>
+					<TabsTrigger value="adherence" className="text-xs sm:text-sm">
 						Adherence
 					</TabsTrigger>
-					<TabsTrigger
-						value="goals"
-						className="text-xs sm:text-sm">
+					<TabsTrigger value="goals" className="text-xs sm:text-sm">
 						Goals
 					</TabsTrigger>
-					<TabsTrigger
-						value="communication"
-						className="text-xs sm:text-sm">
+					<TabsTrigger value="communication" className="text-xs sm:text-sm">
 						Communication
-					</TabsTrigger>
-					<TabsTrigger
-						value="recommendations"
-						className="text-xs sm:text-sm">
-						AI Insights
 					</TabsTrigger>
 				</TabsList>
 

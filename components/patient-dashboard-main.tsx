@@ -115,10 +115,13 @@ export default function PatientDashboardMain() {
 				return <MedicationsEnhanced />;
 			case "lab-monitoring":
 				return <LabMonitoringEnhanced />;
-			case "assessment":
-				return (
-					<ComprehensiveAssessmentFunctional initialSubTab={subTab} />
-				);
+            case "assessment":
+                return (
+                    <ComprehensiveAssessmentFunctional
+                        initialSubTab={subTab}
+                        onNavigate={(tab) => handleNavigation(tab)}
+                    />
+                );
 			case "lifestyle":
 				return <LifestyleEnhanced />;
 			case "communication":
